@@ -67,6 +67,14 @@ RUN testGrabberDeduplicatesFileLinks
 PASS testGrabberDeduplicatesFileLinks
 RUN testSQLiteRoundTripAndCrashRecovery
 PASS testSQLiteRoundTripAndCrashRecovery
+PASS testChangedChunkLayoutResume
+PASS testInvalidOptionsAndDestination
+PASS testGrabberLimitsAndErrors
+PASS testAllErrorMessages
+PASS browser-local URL rejected with actionable error: blob:https://hark.com/477987cc-348b-4564-8c7c-f4e1ae128c7c
+PASS browser-local URL rejected with actionable error: blob:https://igi-qvm-editor.vercel.app/25888708-6d81-4dc8-abff-3827c0284670
+PASS browser-local URL rejected with actionable error: blob:https://cursor.com/cda1e668-eb2d-4179-bbc6-5b75fbdca930
+PASS testBrowserLocalURLs
 RUN testURLValidation
 PASS testURLValidation
-Passed 38 checks
+Passed 43 checks

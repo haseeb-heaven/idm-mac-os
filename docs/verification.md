@@ -4,7 +4,7 @@ Machine: Apple Silicon, macOS 15.3.1; Swift 6.0.3 Command Line Tools. Tests use 
 
 ## Completed checks
 
-- 38 deterministic functional checks passed: ranges; ignored-range fallback; weak ETag/Last-Modified fallback; single-stream transfers; retries during HEAD and GET; redirects; Basic authentication and rejection; HTTP proxy routing; Keychain CRUD; unknown lengths; empty files; malformed ranges; changed resources; HTTP errors; truncation; collision preservation; pause/resume; speed limiting; HTML page rejection; attached HTML files; browser-verification errors; SQLite recovery; URL validation; queue scheduling; safe batch filenames; missing validator fallback; and empty-file HEAD fallback; and HTML base URL resolution; and inactive markup exclusion.
+- 43 deterministic functional checks passed: ranges; ignored-range fallback; weak ETag/Last-Modified fallback; single-stream transfers; retries during HEAD and GET; redirects; Basic authentication and rejection; HTTP proxy routing; Keychain CRUD; unknown lengths; empty files; malformed ranges; changed resources; HTTP errors; truncation; collision preservation; pause/resume; speed limiting; HTML page rejection; attached HTML files; browser-verification errors; SQLite recovery; URL validation; queue scheduling; safe batch filenames; missing validator fallback; and empty-file HEAD fallback; and HTML base URL resolution; and inactive markup exclusion.
 - Real trusted HTTPS download matched a separately fetched SHA256 reference.
 - Full 5 GiB loopback download: **5,368,709,120 bytes**, full-file SHA256 matched the independently generated pattern, **253 seconds**. Generated files were removed after the check. This run preceded the final response-header-only review fixes; affected fallback and HTML paths were rechecked separately.
 - Release `.app` built and its ad hoc signature verified.
@@ -22,3 +22,7 @@ The initial review found missing HEAD retries and inflated retry progress. The n
 ## Limits
 
 Checks establish the documented native behaviors. They do not establish full IDM parity, throughput equivalence, every proxy/auth scheme, or long-duration production reliability. The package is locally ad hoc signed for personal use, not notarized for public distribution.
+
+## Follow-up download and light-theme checks
+
+See [real URL verification](real-url-verification.md): 43 checks, actual native toolbar pause/resume, full installer checksums, and separately measured core/UI coverage.

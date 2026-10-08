@@ -17,7 +17,7 @@ Requires macOS 15+, Apple Silicon, Python 3.12 for the fixtures, and Swift 6 Com
 - Concurrent byte ranges, pause/resume, safe fallback when ranges are ignored, retries, redirects, and file assembly.
 - SQLite job persistence and recovery after restart; Keychain Basic authentication credentials.
 - Proxy configuration, speed limits, FIFO queue, and scheduled start times while the app is running.
-- Native toolbar with overflow handling, category tree, download table, and live details with full errors.
+- IDM-inspired light theme, colored toolbar with overflow handling, category icons, file grid, progress bars, and live details with full errors.
 - Basic single-page file-link grabber with deduplication and a review step.
 
 Browser integration is excluded. Complete IDM behavior parity is **not verified**: dynamic segmentation policy, advanced recurring schedules, named queues, recursive grabber workflows, FTP, and Windows-specific integrations are not implemented. See [feature coverage](docs/parity.md).
@@ -26,6 +26,10 @@ Browser integration is excluded. Complete IDM behavior parity is **not verified*
 
 ```sh
 scripts/test.sh
+# Instrument core and native UI checks; generate line/region coverage and HTML reports:
+scripts/coverage.sh
+# Opt-in real installer downloads with independent curl checksum comparisons:
+python3 scripts/real_download_checks.py
 # Full-size acceptance test; generates and removes 5 GiB locally:
 scripts/swift.sh run --disable-sandbox -c release IDMCoreChecks --large
 # Independent HTTPS reference and native download comparison:
@@ -42,3 +46,5 @@ Select a failed download and choose **Details**. The window shows the full error
 ## Research
 
 [RE.md](RE.md) documents the analysis workflow. [HTTP engine findings](docs/findings/http-engine.md) link original function addresses to GhidraMCP decompilation and independent Radare2 MCP evidence. Proprietary binaries and license keys stay outside Git. Local app data lives in `~/Library/Application Support/IDMMac/`.
+
+[Real URL test results and measured coverage](docs/real-url-verification.md).
