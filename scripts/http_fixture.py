@@ -18,7 +18,7 @@ class Handler(BaseHTTPRequestHandler):
   if path=='/headforbidden' and not body:self.send_error(403);return
   if path=='/protected':
    self.send_response(403);self.send_header('cf-mitigated','challenge');self.end_headers();return
-  if path=='/nohead' and not body:self.send_error(405);return
+  if path in ['/nohead','/emptyhead'] and not body:self.send_error(405);return
   if (path=='/flaky' and body) or (path=='/headflaky' and not body):
    with lock:attempts[path]=attempts.get(path,0)+1;number=attempts[path]
    if number==1:self.send_error(503);return
@@ -47,9 +47,10 @@ class Handler(BaseHTTPRequestHandler):
    self.send_response(200);self.send_header('Content-Type','text/html');self.send_header('Content-Length',str(len(payload)));self.end_headers()
    if body:self.wfile.write(payload)
    return
-  payload=b'' if path=='/empty' else DATA
+  payload=b'' if path in ['/empty','/emptyhead'] else DATA
+  if path in ['/gethtml','/htmlattachment'] and body:payload=b'<html>login or attachment</html>'
   validator='"fixture-v2"' if path=='/changed' and body else '"fixture-v1"'
-  ranged=self.headers.get('Range') if path not in ['/norange','/ignore','/changed','/nohead','/retryfull'] else None
+  ranged=self.headers.get('Range') if path not in ['/norange','/ignore','/weakignore','/omitignore','/changed','/nohead','/retryfull','/gethtml','/htmlattachment'] else None
   if ranged:
    match=re.fullmatch(r'bytes=(\d+)-(\d+)',ranged)
    if not match:self.send_error(416);return
@@ -58,9 +59,13 @@ class Handler(BaseHTTPRequestHandler):
    payload=payload[start:end+1];self.send_response(206)
    self.send_header('Content-Range',f'bytes {start+1 if path=="/bad" else start}-{end}/{len(DATA)}')
   else:self.send_response(200)
-  if path!='/unknown':self.send_header('Content-Length',str(len(payload)))
+  if path not in ['/unknown','/gethtml','/htmlattachment']:self.send_header('Content-Length',str(len(payload)))
+  if path in ['/gethtml','/htmlattachment'] and body:self.send_header('Content-Type','text/html')
+  if path=='/htmlattachment':self.send_header('Content-Disposition','attachment; filename=sample.html')
   if path not in ['/norange','/nohead','/unknown','/retryfull']:self.send_header('Accept-Ranges','bytes')
-  if path!='/novalidator':self.send_header('ETag',validator)
+  if path=='/weakignore':
+   self.send_header('ETag','W/"fixture-v1"');self.send_header('Last-Modified','Wed, 07 Oct 2026 12:00:00 GMT')
+  elif path!='/novalidator' and not (path=='/omitignore' and body):self.send_header('ETag',validator)
   self.end_headers()
   if not body:return
   try:

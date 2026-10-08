@@ -148,6 +148,16 @@ public struct DownloadEngine: Sendable {
         if let authorization { request.setValue(authorization, forHTTPHeaderField: "Authorization") }
         return request
     }
+    private func validateResponse(_ http:HTTPURLResponse) throws {
+        if http.statusCode == 403 && http.value(forHTTPHeaderField:"cf-mitigated")?.lowercased() == "challenge" { throw DownloadError.browserVerification }
+        guard (200...299).contains(http.statusCode) else { throw DownloadError.http(http.statusCode) }
+        let attachment = http.value(forHTTPHeaderField:"Content-Disposition")?.lowercased().hasPrefix("attachment") == true
+        if http.value(forHTTPHeaderField:"Content-Type")?.lowercased().contains("text/html") == true && !attachment { throw DownloadError.webPage }
+    }
+    private func responseValidator(_ http:HTTPURLResponse, matching value:String?) -> String? {
+        if value?.hasPrefix("\"") == true { return http.value(forHTTPHeaderField:"ETag") }
+        return http.value(forHTTPHeaderField:"Last-Modified")
+    }
     private func inspectWithRetry(_ url:URL, session:URLSession, authorization:String?, options:DownloadOptions) async throws -> Manifest {
         for attempt in 0...options.retries {
             try Task.checkCancellation()
@@ -174,10 +184,16 @@ public struct DownloadEngine: Sendable {
             defer { bytes.task.cancel() }
             guard let actual = response as? HTTPURLResponse else { throw DownloadError.http(0) }
             http = actual
+            if http.statusCode == 416 {
+                bytes.task.cancel()
+                probe.setValue(nil,forHTTPHeaderField:"Range")
+                let (full,fullResponse) = try await session.bytes(for:probe)
+                defer { full.task.cancel() }
+                guard let actual = fullResponse as? HTTPURLResponse else { throw DownloadError.http(0) }
+                http = actual
+            }
         }
-        if http.statusCode == 403 && http.value(forHTTPHeaderField:"cf-mitigated")?.lowercased() == "challenge" { throw DownloadError.browserVerification }
-        guard (200...299).contains(http.statusCode) else { throw DownloadError.http(http.statusCode) }
-        if http.value(forHTTPHeaderField:"Content-Type")?.lowercased().contains("text/html") == true { throw DownloadError.webPage }
+        try validateResponse(http)
         let etag = http.value(forHTTPHeaderField: "ETag")
         let validator = etag.flatMap { $0.hasPrefix("W/") ? nil : $0 } ?? http.value(forHTTPHeaderField: "Last-Modified")
         let length = http.statusCode == 206 ? Int64(http.value(forHTTPHeaderField:"Content-Range")?.split(separator:"/").last ?? "") ?? -1 : http.expectedContentLength
@@ -204,16 +220,15 @@ public struct DownloadEngine: Sendable {
                 let (bytes, response) = try await session.bytes(for: req)
                 defer { bytes.task.cancel() }
                 guard let http = response as? HTTPURLResponse else { throw DownloadError.http(0) }
-                guard (200...299).contains(http.statusCode) else { throw DownloadError.http(http.statusCode) }
+                try validateResponse(http)
                 if let start, let end {
                     guard http.statusCode == 206 else {
-                        let returned = http.value(forHTTPHeaderField: "ETag") ?? http.value(forHTTPHeaderField: "Last-Modified")
-                        if returned == manifest.validator { throw DownloadError.rangeUnsupported }
+                        let returned = responseValidator(http,matching:manifest.validator)
+                        if returned == nil || returned == manifest.validator { throw DownloadError.rangeUnsupported }
                         throw DownloadError.changedResource
                     }
                     guard http.value(forHTTPHeaderField: "Content-Range") == "bytes \(start + existing)-\(end)/\(manifest.length)" else { throw DownloadError.invalidRange }
-                    if let etag = http.value(forHTTPHeaderField: "ETag"), manifest.validator?.hasPrefix("\"") == true,
-                       etag != manifest.validator { throw DownloadError.changedResource }
+                    if let returned = responseValidator(http,matching:manifest.validator), returned != manifest.validator { throw DownloadError.changedResource }
                 }
                 if !FileManager.default.fileExists(atPath: file.path) {
                     guard FileManager.default.createFile(atPath: file.path, contents: nil) else { throw DownloadError.storage("Cannot create segment") }

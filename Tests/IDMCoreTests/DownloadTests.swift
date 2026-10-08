@@ -51,6 +51,27 @@ final class DownloadTests: @unchecked Sendable {
         let data = try Data(contentsOf:job.destination)
         try XCTAssertEqual(SHA256.hash(data:data),SHA256.hash(data:expected()))
     }
+    func testMissingValidatorFallback() async throws { try await check("omitignore") }
+    func testEmptyHeadFallback() async throws {
+        let fixture = try Fixture();let dir = try directory();defer { try? FileManager.default.removeItem(at:dir) }
+        let job = try DownloadJob(url:fixture.base.appendingPathComponent("emptyhead"),destination:dir.appendingPathComponent("empty"))
+        try await DownloadEngine(workDirectory:dir.appendingPathComponent("work")).run(job:job)
+        try XCTAssertEqual(try Data(contentsOf:job.destination).count,0)
+    }
+    func testSafeFilenames() throws {
+        for value in ["%2E%2E%2Foutside.zip", "%2E%2E", "%5Coutside.zip", "%00bad.zip"] {
+            try XCTAssertEqual(DownloadFilename.from(URL(string:"https://example.com/" + value)!),"download")
+        }
+        try XCTAssertEqual(DownloadFilename.from(URL(string:"https://example.com/file.zip")!),"file.zip")
+    }
+    func testWeakETagRangeFallback() async throws { try await check("weakignore") }
+    func testGETLoginPageRejected() async throws { try await rejection("gethtml") }
+    func testHTMLAttachmentAllowed() async throws {
+        let fixture = try Fixture();let dir = try directory();defer { try? FileManager.default.removeItem(at:dir) }
+        let job = try DownloadJob(url:fixture.base.appendingPathComponent("htmlattachment"),destination:dir.appendingPathComponent("sample.html"))
+        try await DownloadEngine(workDirectory:dir.appendingPathComponent("work")).run(job:job)
+        try XCTAssertEqual(try String(contentsOf:job.destination,encoding:.utf8),"<html>login or attachment</html>")
+    }
     func testFiveGiBDownload() async throws {
         let fixture = try Fixture();let dir = try directory();defer { try? FileManager.default.removeItem(at:dir) }
         let job = try DownloadJob(url:fixture.base.appendingPathComponent("large"),destination:dir.appendingPathComponent("5GiB.bin"))
@@ -207,6 +228,12 @@ private func log(_ text:String) { FileHandle.standardOutput.write(Data((text + "
         if ProcessInfo.processInfo.arguments.contains("--large") { try await suite.testFiveGiBDownload();return }
         if ProcessInfo.processInfo.arguments.contains("--https") { try await suite.testTrustedHTTPS();log("PASS trusted HTTPS with independent SHA256 reference");return }
         var passed = 0
+        try await suite.testMissingValidatorFallback();passed += 1;log("PASS testMissingValidatorFallback")
+        try await suite.testEmptyHeadFallback();passed += 1;log("PASS testEmptyHeadFallback")
+        try suite.testSafeFilenames();passed += 1;log("PASS testSafeFilenames")
+        log("RUN testWeakETagRangeFallback");try await suite.testWeakETagRangeFallback();passed += 1;log("PASS testWeakETagRangeFallback")
+        log("RUN testGETLoginPageRejected");try await suite.testGETLoginPageRejected();passed += 1;log("PASS testGETLoginPageRejected")
+        log("RUN testHTMLAttachmentAllowed");try await suite.testHTMLAttachmentAllowed();passed += 1;log("PASS testHTMLAttachmentAllowed")
         log("RUN testQueueScheduling");try suite.testQueueScheduling();passed += 1;log("PASS testQueueScheduling")
         log("RUN testHTTPProxy"); try await suite.testHTTPProxy(); passed += 1; log("PASS testHTTPProxy")
         log("RUN testKeychainRoundTrip"); try suite.testKeychainRoundTrip(); passed += 1; log("PASS testKeychainRoundTrip")

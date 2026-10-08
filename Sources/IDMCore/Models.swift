@@ -54,3 +54,13 @@ public enum DownloadError: Error, LocalizedError, Sendable {
         }
     }
 }
+
+public enum DownloadFilename {
+    public static func from(_ url: URL) -> String {
+        let encoded = URLComponents(url: url, resolvingAgainstBaseURL: false)?.percentEncodedPath.split(separator: "/", omittingEmptySubsequences: false).last.map(String.init) ?? ""
+        let name = encoded.removingPercentEncoding ?? ""
+        guard !name.isEmpty, name != ".", name != "..",
+              !name.contains("/"), !name.contains("\\"), !name.contains("\0") else { return "download" }
+        return name
+    }
+}
