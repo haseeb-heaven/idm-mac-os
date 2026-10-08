@@ -1,0 +1,10 @@
+[0/1] Planning build
+Building for production...
+[0/5] Write sources
+[2/5] Write swift-version--1AB21518FC5DEDBE.txt
+[4/6] Compiling IDMCore Credentials.swift
+[5/7] Compiling IDMCoreChecks DownloadTests.swift
+[5/7] Write Objects.LinkFileList
+[6/7] Linking IDMCoreChecks
+Build of product 'IDMCoreChecks' complete! (5.87s)
+PASS 5 GiB download: 5368709120 bytes, full SHA256 verified, 253 seconds

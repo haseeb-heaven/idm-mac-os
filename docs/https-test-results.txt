@@ -1,0 +1,11 @@
+[0/1] Planning build
+Building for debugging...
+[0/4] Write sources
+[1/4] Write swift-version--1AB21518FC5DEDBE.txt
+[3/6] Emitting module IDMCoreChecks
+[4/6] Compiling IDMCoreChecks DownloadTests.swift
+[4/7] Write Objects.LinkFileList
+[5/7] Linking IDMCoreChecks
+[6/7] Applying IDMCoreChecks
+Build of product 'IDMCoreChecks' complete! (2.48s)
+PASS trusted HTTPS with independent SHA256 reference
