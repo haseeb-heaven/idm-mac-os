@@ -13,6 +13,7 @@ public struct DownloadJob: Codable, Identifiable, Sendable {
     public var scheduledAt: Date?
     public var createdAt = Date()
     public init(url: URL, destination: URL, scheduledAt: Date? = nil) throws {
+        if url.scheme?.lowercased() == "blob" { throw DownloadError.browserLocalURL }
         guard ["http", "https"].contains(url.scheme?.lowercased() ?? ""), url.host != nil,
               url.user == nil, url.password == nil else { throw DownloadError.invalidURL }
         guard destination.isFileURL, !destination.lastPathComponent.isEmpty else { throw DownloadError.invalidDestination }
@@ -37,12 +38,13 @@ public struct TransferProgress: Sendable {
     public init(received: Int64, total: Int64) { self.received = received; self.total = total }
 }
 public enum DownloadError: Error, LocalizedError, Sendable {
-    case invalidURL, invalidDestination, http(Int), invalidRange, rangeUnsupported, browserVerification, webPage, destinationExists, storage(String), changedResource, incomplete
+    case invalidURL, invalidDestination, http(Int), invalidRange, rangeUnsupported, browserLocalURL, browserVerification, webPage, destinationExists, storage(String), changedResource, incomplete
     public var errorDescription: String? {
         switch self {
         case .invalidURL: "Enter an HTTP or HTTPS URL without embedded credentials."
         case .invalidDestination: "Choose a valid destination file."
         case .http(let code): "The server returned HTTP \(code)."
+        case .browserLocalURL: "This blob URL belongs to a browser tab. Save the file from that tab, or copy its original HTTP/HTTPS download link."
         case .browserVerification: "This website requires browser verification. Open the page in your browser, then copy the direct file download link."
         case .webPage: "This URL points to an HTML page. Copy the direct file download link or use Grabber to find file links."
         case .rangeUnsupported: "The server does not support range requests."

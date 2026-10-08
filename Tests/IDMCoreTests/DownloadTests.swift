@@ -223,6 +223,50 @@ final class DownloadTests: @unchecked Sendable {
         try XCTAssertEqual(loaded.count,1);try XCTAssertEqual(loaded[0].id,job.id);try XCTAssertEqual(loaded[0].state,.paused);try XCTAssertEqual(loaded[0].receivedBytes,42);try XCTAssertEqual(loaded[0].scheduledAt,job.scheduledAt)
         try store.save([]);try XCTAssertTrue(try store.load().isEmpty)
     }
+    func testBrowserLocalURLs() throws {
+        for value in ["blob:https://hark.com/477987cc-348b-4564-8c7c-f4e1ae128c7c","blob:https://igi-qvm-editor.vercel.app/25888708-6d81-4dc8-abff-3827c0284670","blob:https://cursor.com/cda1e668-eb2d-4179-bbc6-5b75fbdca930"] {
+            do { _ = try DownloadJob(url:URL(string:value)!,destination:URL(fileURLWithPath:"/tmp/blob"));try XCTFail("Blob URL accepted") }
+            catch DownloadError.browserLocalURL { }
+            log("PASS browser-local URL rejected with actionable error: " + value)
+        }
+    }
+    func testChangedChunkLayoutResume() async throws {
+        let fixture = try Fixture();let dir = try directory();defer { try? FileManager.default.removeItem(at:dir) }
+        let job = try DownloadJob(url:fixture.base.appendingPathComponent("slow"),destination:dir.appendingPathComponent("result"))
+        let engine = DownloadEngine(workDirectory:dir.appendingPathComponent("work"));var options = DownloadOptions();options.chunkBytes = 256*1024
+        let task = Task { try await engine.run(job:job,options:options) }
+        try await Task.sleep(for:.milliseconds(250));task.cancel();_ = try? await task.value
+        options.chunkBytes = 128*1024
+        try await engine.run(job:job,options:options)
+        try XCTAssertEqual(SHA256.hash(data:try Data(contentsOf:job.destination)),SHA256.hash(data:expected()))
+    }
+    func testInvalidOptionsAndDestination() async throws {
+        let dir = try directory();defer { try? FileManager.default.removeItem(at:dir) }
+        try XCTAssertThrowsError(try DownloadJob(url:URL(string:"https://example.com/file")!,destination:URL(string:"https://example.com/out")!))
+        let job = try DownloadJob(url:URL(string:"https://example.com/file")!,destination:dir.appendingPathComponent("out"))
+        for number in 0..<4 {
+            var options = DownloadOptions()
+            switch number { case 0:options.connections = 0;case 1:options.chunkBytes = 0;case 2:options.retries = 11;default:options.bytesPerSecond = -1 }
+            do { try await DownloadEngine(workDirectory:dir.appendingPathComponent("work")).run(job:job,options:options);try XCTFail("Invalid options accepted") }
+            catch DownloadError.storage { }
+        }
+    }
+    func testGrabberLimitsAndErrors() async throws {
+        let fixture = try Fixture()
+        for value in ["file:///tmp/page","https://user@example.com/page"] {
+            do { _ = try await SiteGrabber.links(on:URL(string:value)!);try XCTFail("Unsafe grabber URL accepted") }
+            catch DownloadError.invalidURL { }
+        }
+        do { _ = try await SiteGrabber.links(on:fixture.base.appendingPathComponent("missing"));try XCTFail("Missing page accepted") }
+        catch DownloadError.http(404) { }
+        do { _ = try await SiteGrabber.links(on:fixture.base.appendingPathComponent("bigpage"));try XCTFail("Oversized page accepted") }
+        catch DownloadError.storage { }
+        try XCTAssertEqual(try await SiteGrabber.links(on:fixture.base.appendingPathComponent("manylinks")).count,500)
+    }
+    func testAllErrorMessages() throws {
+        let errors:[DownloadError] = [.invalidURL,.invalidDestination,.http(403),.invalidRange,.rangeUnsupported,.browserLocalURL,.browserVerification,.webPage,.destinationExists,.storage("disk"),.changedResource,.incomplete]
+        for error in errors { try XCTAssertFalse(error.localizedDescription.isEmpty) }
+    }
     func testURLValidation() throws {
         try XCTAssertThrowsError(try DownloadJob(url:URL(string:"file:///tmp/x")!,destination:URL(fileURLWithPath:"/tmp/out")))
         try XCTAssertThrowsError(try DownloadJob(url:URL(string:"https://user:secret@example.com/x")!,destination:URL(fileURLWithPath:"/tmp/out")))
@@ -235,6 +279,23 @@ private func log(_ text:String) { FileHandle.standardOutput.write(Data((text + "
         let suite = DownloadTests()
         if ProcessInfo.processInfo.arguments.contains("--large") { try await suite.testFiveGiBDownload();return }
         if ProcessInfo.processInfo.arguments.contains("--https") { try await suite.testTrustedHTTPS();log("PASS trusted HTTPS with independent SHA256 reference");return }
+        if let index = ProcessInfo.processInfo.arguments.firstIndex(of:"--url"), ProcessInfo.processInfo.arguments.count > index + 1 {
+            let dir = FileManager.default.temporaryDirectory.appendingPathComponent("idm-external-\(UUID())")
+            defer { try? FileManager.default.removeItem(at:dir) }
+            let job = try DownloadJob(url:URL(string:ProcessInfo.processInfo.arguments[index+1])!,destination:dir.appendingPathComponent("result"))
+            do {
+                try await DownloadEngine(workDirectory:dir.appendingPathComponent("work")).run(job:job)
+                let attrs = try FileManager.default.attributesOfItem(atPath:job.destination.path)
+                let handle = try FileHandle(forReadingFrom:job.destination);defer { try? handle.close() };var hash = SHA256()
+                while let bytes = try handle.read(upToCount:1024*1024), !bytes.isEmpty { hash.update(data:bytes) }
+                let digest = hash.finalize().map { String(format:"%02x",$0) }.joined()
+                if let refIndex = ProcessInfo.processInfo.arguments.firstIndex(of:"--sha256"), ProcessInfo.processInfo.arguments.count > refIndex + 1 {
+                    try XCTAssertEqual(digest,ProcessInfo.processInfo.arguments[refIndex+1])
+                }
+                log("DOWNLOAD SUCCEEDED: \(attrs[.size] ?? 0) bytes, SHA256 \(digest)")
+            } catch { log("DOWNLOAD FAILED: \(error.localizedDescription)");exit(1) }
+            return
+        }
         var passed = 0
         try await suite.testMissingValidatorFallback();passed += 1;log("PASS testMissingValidatorFallback")
         try await suite.testEmptyHeadFallback();passed += 1;log("PASS testEmptyHeadFallback")
@@ -273,6 +334,11 @@ private func log(_ text:String) { FileHandle.standardOutput.write(Data((text + "
         try await suite.testGrabberBaseURL();passed += 1;log("PASS testGrabberBaseURL")
         log("RUN testGrabberDeduplicatesFileLinks"); try await suite.testGrabberDeduplicatesFileLinks(); passed += 1; log("PASS testGrabberDeduplicatesFileLinks")
         log("RUN testSQLiteRoundTripAndCrashRecovery"); try suite.testSQLiteRoundTripAndCrashRecovery(); passed += 1; log("PASS testSQLiteRoundTripAndCrashRecovery")
+        try await suite.testChangedChunkLayoutResume();passed += 1;log("PASS testChangedChunkLayoutResume")
+        try await suite.testInvalidOptionsAndDestination();passed += 1;log("PASS testInvalidOptionsAndDestination")
+        try await suite.testGrabberLimitsAndErrors();passed += 1;log("PASS testGrabberLimitsAndErrors")
+        try suite.testAllErrorMessages();passed += 1;log("PASS testAllErrorMessages")
+        try suite.testBrowserLocalURLs();passed += 1;log("PASS testBrowserLocalURLs")
         log("RUN testURLValidation"); try suite.testURLValidation(); passed += 1; log("PASS testURLValidation")
         log("Passed \(passed) checks")
     }

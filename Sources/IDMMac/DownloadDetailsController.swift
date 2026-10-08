@@ -16,7 +16,7 @@ import IDMCore
     init(job:DownloadJob,onResume:@escaping () -> Void,onPause:@escaping () -> Void) {
         self.job = job;jobID = job.id;self.onResume = onResume;self.onPause = onPause
         let panel = NSPanel(contentRect:NSRect(x:0,y:0,width:580,height:330),styleMask:[.titled,.closable],backing:.buffered,defer:false)
-        panel.title = "Download Details";panel.center()
+        panel.appearance = NSAppearance(named:.aqua);panel.title = "Download Details";panel.center()
         super.init(window:panel)
         guard let content = panel.contentView else { return }
         let name = NSTextField(labelWithString:job.destination.lastPathComponent);name.font = .systemFont(ofSize:16,weight:.semibold);name.lineBreakMode = .byTruncatingMiddle
