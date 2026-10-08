@@ -1,5 +1,6 @@
 import Foundation
 import CryptoKit
+import Darwin
 import IDMCore
 
 private enum CheckFailure: Error { case failed(String) }
@@ -82,8 +83,13 @@ final class DownloadTests: @unchecked Sendable {
         try XCTAssertEqual(size,5*1024*1024*1024)
         let pattern = expected();var reference = SHA256();for _ in 0..<5120 { reference.update(data:pattern) }
         let file = try FileHandle(forReadingFrom:job.destination);defer { try? file.close() };var result = SHA256()
-        while let data = try file.read(upToCount:1024*1024), !data.isEmpty { result.update(data:data) }
+        while let data = try autoreleasepool(invoking: { try file.read(upToCount:1024*1024) }), !data.isEmpty { result.update(data:data) }
         try XCTAssertEqual(result.finalize(),reference.finalize())
+        var usage = rusage()
+        try XCTAssertEqual(getrusage(RUSAGE_SELF,&usage),0)
+        // Darwin reports ru_maxrss in bytes. Keep the opt-in large-file check below 1 GiB.
+        try require(usage.ru_maxrss < 1024*1024*1024,"Large-file peak RSS exceeded 1 GiB")
+        log("PASS large-file memory: peak RSS \(usage.ru_maxrss) bytes (< 1 GiB)")
         log("PASS 5 GiB download: 5368709120 bytes, full SHA256 verified, \(Int(Date().timeIntervalSince(start))) seconds")
     }
     func testQueueScheduling() throws {
@@ -316,7 +322,7 @@ private func log(_ text:String) { FileHandle.standardOutput.write(Data((text + "
                 try await DownloadEngine(workDirectory:dir.appendingPathComponent("work")).run(job:job)
                 let attrs = try FileManager.default.attributesOfItem(atPath:job.destination.path)
                 let handle = try FileHandle(forReadingFrom:job.destination);defer { try? handle.close() };var hash = SHA256()
-                while let bytes = try handle.read(upToCount:1024*1024), !bytes.isEmpty { hash.update(data:bytes) }
+                while let bytes = try autoreleasepool(invoking: { try handle.read(upToCount:1024*1024) }), !bytes.isEmpty { hash.update(data:bytes) }
                 let digest = hash.finalize().map { String(format:"%02x",$0) }.joined()
                 if let refIndex = ProcessInfo.processInfo.arguments.firstIndex(of:"--sha256"), ProcessInfo.processInfo.arguments.count > refIndex + 1 {
                     try XCTAssertEqual(digest,ProcessInfo.processInfo.arguments[refIndex+1])

@@ -126,9 +126,9 @@ public struct DownloadEngine: Sendable {
                 try Task.checkCancellation()
                 let input = try FileHandle(forReadingFrom: directory.appendingPathComponent("\(index).part"))
                 defer { try? input.close() }
-                while let data = try input.read(upToCount: 1024 * 1024), !data.isEmpty {
+                while let data = try autoreleasepool(invoking: { try input.read(upToCount: 1024 * 1024) }), !data.isEmpty {
                     try Task.checkCancellation()
-                    try output.write(contentsOf: data); assembled += Int64(data.count)
+                    try autoreleasepool { try output.write(contentsOf: data) }; assembled += Int64(data.count)
                 }
                 try input.close()
                 // Missing segments are re-fetched on a later resume if assembly is interrupted.
@@ -246,14 +246,14 @@ public struct DownloadEngine: Sendable {
                     buffer.append(data)
                     while buffer.count >= 65536 {
                         if let start, let end, received + 65536 > end - start + 1 { throw DownloadError.invalidRange }
-                        try handle.write(contentsOf:buffer.prefix(65536));received += 65536
+                        try autoreleasepool { try handle.write(contentsOf:buffer.prefix(65536)) };received += 65536
                         try await meter.record(65536);buffer.removeFirst(65536)
                     }
                 }
                 try Task.checkCancellation()
                 if !buffer.isEmpty {
                     if let start, let end, received + Int64(buffer.count) > end - start + 1 { throw DownloadError.invalidRange }
-                    try handle.write(contentsOf: buffer); received += Int64(buffer.count); try await meter.record(buffer.count)
+                    try autoreleasepool { try handle.write(contentsOf: buffer) }; received += Int64(buffer.count); try await meter.record(buffer.count)
                 }
                 try handle.synchronize()
                 if let start, let end, received != end - start + 1 { throw DownloadError.incomplete }
