@@ -23,8 +23,8 @@ public struct DownloadJob: Codable, Identifiable, Sendable {
     }
 }
 public struct DownloadOptions: Codable, Sendable {
-    public var connections: Int = 8
-    public var chunkBytes: Int64 = 2 * 1024 * 1024
+    public var connections: Int = 16
+    public var chunkBytes: Int64 = 8 * 1024 * 1024
     public var bytesPerSecond: Int64 = 0
     public var retries: Int = 3
     public var useRanges: Bool = true

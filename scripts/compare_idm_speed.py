@@ -42,7 +42,7 @@ def main():
  parser=argparse.ArgumentParser();parser.add_argument('--trials',type=int,default=3);parser.add_argument('--timeout',type=int,default=600);parser.add_argument('--case',choices=CASES);args=parser.parse_args()
  if args.trials<1 or args.timeout<=0:parser.error("trials and timeout must be positive")
  directory=ROOT/'build/speed-comparison'/time.strftime('run-%Y%m%d-%H%M%S');directory.mkdir(parents=True)
- report={'startedUTC':time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime()),'nativeConnections':8,'nativeBinarySHA256':hashlib.file_digest((ROOT/'.build/release/IDMCoreChecks').open('rb'),'sha256').hexdigest(),'originalSettings':'unmodified isolated reference installation defaults','timing':'command dispatch through full-file completion and checksum, including launcher overhead','runs':[]}
+ report={'startedUTC':time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime()),'nativeConnections':16,'nativeChunkBytes':8*1024*1024,'nativeBinarySHA256':hashlib.file_digest((ROOT/'.build/release/IDMCoreChecks').open('rb'),'sha256').hexdigest(),'originalSettings':'unmodified isolated reference installation defaults','timing':'command dispatch through full-file completion and checksum, including launcher overhead','runs':[]}
  def save(): (directory/'results.json').write_text(json.dumps(report,indent=2)+'\n')
  try:
   for name,(url,size) in CASES.items():

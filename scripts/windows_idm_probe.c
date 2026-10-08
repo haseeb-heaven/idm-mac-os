@@ -6,10 +6,16 @@
 static const char *capture_directory;
 static int capture_count;
 static int quiet, dismiss;
+static int text_reads;
+static void read_control_text(HWND w,char *text,int capacity) {
+    text_reads++;GetWindowTextA(w,text,capacity);
+}
 static BOOL CALLBACK child(HWND w,LPARAM unused) {
     char text[2048]={0},cls[128]={0};
-    GetWindowTextA(w,text,sizeof text);GetClassNameA(w,cls,sizeof cls);
+    GetClassNameA(w,cls,sizeof cls);
     /* Do not read edit controls: registration/credential fields are not evidence. */
+    if(!strcmp(cls,"Edit"))return TRUE;
+    read_control_text(w,text,sizeof text);
     if(!strcmp(cls,"SysListView32")&&GetDlgCtrlID(w)==1177)printf("CONNECTION_ROWS %ld\n",(long)SendMessageA(w,LVM_GETITEMCOUNT,0,0));
     if(text[0]&&strcmp(cls,"Edit"))printf("CONTROL %d %s %s\n",GetDlgCtrlID(w),cls,text);
     return TRUE;
@@ -50,7 +56,19 @@ static BOOL CALLBACK visit(HWND w,LPARAM unused) {
     if(capture_directory&&!strcmp(cls,"#32770")&&(strstr(title,"Internet Download Manager")||strstr(title,".dmg")))capture(w);
     return TRUE;
 }
+static int self_test(void) {
+    HWND edit=CreateWindowExA(0,"Edit","private-test-sentinel",0,0,0,100,20,NULL,NULL,GetModuleHandle(NULL),NULL);
+    HWND label=CreateWindowExA(0,"Static","public-test-label",0,0,0,100,20,NULL,NULL,GetModuleHandle(NULL),NULL);
+    if(!edit||!label){fprintf(stderr,"FAIL could not create test controls\n");return 1;}
+    text_reads=0;child(edit,0);
+    if(text_reads!=0){fprintf(stderr,"FAIL Edit text was read\n");return 1;}
+    child(label,0);
+    if(text_reads!=1){fprintf(stderr,"FAIL Static text was not read\n");return 1;}
+    DestroyWindow(edit);DestroyWindow(label);
+    puts("PASS observer skips Edit text reads and retains Static output");return 0;
+}
 int main(int argc,char **argv){
+    if(argc>1&&!strcmp(argv[1],"--self-test"))return self_test();
     if(argc>2&&!strcmp(argv[1],"--guard")) {
         quiet=dismiss=1;setbuf(stdout,NULL);
         while(GetFileAttributesA(argv[2])==INVALID_FILE_ATTRIBUTES){EnumWindows(visit,0);Sleep(200);}
