@@ -267,6 +267,35 @@ final class DownloadTests: @unchecked Sendable {
         let errors:[DownloadError] = [.invalidURL,.invalidDestination,.http(403),.invalidRange,.rangeUnsupported,.browserLocalURL,.browserVerification,.webPage,.destinationExists,.storage("disk"),.changedResource,.incomplete]
         for error in errors { try XCTAssertFalse(error.localizedDescription.isEmpty) }
     }
+    func testChunkStreamBackpressure() async throws {
+        let fixture = try Fixture();let dir = try directory();defer { try? FileManager.default.removeItem(at:dir) }
+        let job = try DownloadJob(url:fixture.base.appendingPathComponent("bulk"),destination:dir.appendingPathComponent("bulk"))
+        var options = DownloadOptions();options.useRanges = false;options.bytesPerSecond = 1024*1024
+        let started = ContinuousClock.now
+        try await DownloadEngine(workDirectory:dir.appendingPathComponent("work")).run(job:job,options:options)
+        try XCTAssertEqual(SHA256.hash(data:try Data(contentsOf:job.destination)),SHA256.hash(data:expected()+expected()+expected()+expected()))
+        try XCTAssertGreaterThanOrEqual(started.duration(to:.now),.milliseconds(3800))
+    }
+    func testCancelBeforeStreamHeaders() async throws {
+        let fixture = try Fixture();let dir = try directory();defer { try? FileManager.default.removeItem(at:dir) }
+        let job = try DownloadJob(url:fixture.base.appendingPathComponent("delayheaders"),destination:dir.appendingPathComponent("result"))
+        let engine = DownloadEngine(workDirectory:dir.appendingPathComponent("work"))
+        let task = Task { try await engine.run(job:job) }
+        try await Task.sleep(for:.milliseconds(100));task.cancel()
+        do { try await task.value;try XCTFail("Cancellation before headers succeeded") }
+        catch is CancellationError { }
+        try XCTAssertFalse(FileManager.default.fileExists(atPath:job.destination.path))
+    }
+    func testSameOriginRedirectCredentials() async throws { try await check("redirectauth",authorization:"Basic dXNlcjpwYXNz") }
+    func testCrossOriginRedirectDropsCredentials() async throws {
+        let fixture = try Fixture();let target = try Fixture();let dir = try directory();defer { try? FileManager.default.removeItem(at:dir) }
+        var url = URLComponents(url:fixture.base.appendingPathComponent("externalredirect"),resolvingAgainstBaseURL:false)!
+        url.queryItems = [URLQueryItem(name:"target",value:target.base.appendingPathComponent("auth-leak-check").absoluteString)]
+        let job = try DownloadJob(url:url.url!,destination:dir.appendingPathComponent("result"))
+        var options = DownloadOptions();options.chunkBytes = 256*1024
+        try await DownloadEngine(workDirectory:dir.appendingPathComponent("work")).run(job:job,options:options,authorization:"Basic dXNlcjpwYXNz")
+        try XCTAssertEqual(SHA256.hash(data:try Data(contentsOf:job.destination)),SHA256.hash(data:expected()))
+    }
     func testURLValidation() throws {
         try XCTAssertThrowsError(try DownloadJob(url:URL(string:"file:///tmp/x")!,destination:URL(fileURLWithPath:"/tmp/out")))
         try XCTAssertThrowsError(try DownloadJob(url:URL(string:"https://user:secret@example.com/x")!,destination:URL(fileURLWithPath:"/tmp/out")))
@@ -338,6 +367,10 @@ private func log(_ text:String) { FileHandle.standardOutput.write(Data((text + "
         try await suite.testInvalidOptionsAndDestination();passed += 1;log("PASS testInvalidOptionsAndDestination")
         try await suite.testGrabberLimitsAndErrors();passed += 1;log("PASS testGrabberLimitsAndErrors")
         try suite.testAllErrorMessages();passed += 1;log("PASS testAllErrorMessages")
+        try await suite.testChunkStreamBackpressure();passed += 1;log("PASS testChunkStreamBackpressure")
+        try await suite.testCancelBeforeStreamHeaders();passed += 1;log("PASS testCancelBeforeStreamHeaders")
+        try await suite.testSameOriginRedirectCredentials();passed += 1;log("PASS testSameOriginRedirectCredentials")
+        try await suite.testCrossOriginRedirectDropsCredentials();passed += 1;log("PASS testCrossOriginRedirectDropsCredentials")
         try suite.testBrowserLocalURLs();passed += 1;log("PASS testBrowserLocalURLs")
         log("RUN testURLValidation"); try suite.testURLValidation(); passed += 1; log("PASS testURLValidation")
         log("Passed \(passed) checks")

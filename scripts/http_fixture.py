@@ -1,7 +1,7 @@
 """Deterministic loopback fixture for download-engine integration tests."""
 from http.server import ThreadingHTTPServer,BaseHTTPRequestHandler
 import re,threading,time,socket
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit,parse_qs
 DATA=bytes(range(256))*4096
 lock=threading.Lock(); attempts={}
 class Handler(BaseHTTPRequestHandler):
@@ -10,6 +10,11 @@ class Handler(BaseHTTPRequestHandler):
  def do_GET(self):self.serve(True)
  def serve(self,body):
   path=urlsplit(self.path).path
+  if path in ['/redirectauth','/externalredirect']:
+   target='/auth' if path=='/redirectauth' else parse_qs(urlsplit(self.path).query)['target'][0]
+   self.send_response(302);self.send_header('Location',target);self.end_headers();return
+  if path=='/auth-leak-check' and self.headers.get('Authorization'):
+   self.send_error(403);return
   if path=='/redirect':
    self.send_response(302);self.send_header('Location','/file');self.end_headers();return
   if path=='/auth' and self.headers.get('Authorization')!='Basic dXNlcjpwYXNz':
@@ -51,8 +56,11 @@ class Handler(BaseHTTPRequestHandler):
    self.send_response(200);self.send_header('Content-Type','text/html');self.send_header('Content-Length',str(len(payload)));self.end_headers()
    if body:self.wfile.write(payload)
    return
+  if path=='/delayheaders' and body:time.sleep(.5)
   payload=b'' if path in ['/empty','/emptyhead'] else DATA
   if path in ['/gethtml','/htmlattachment'] and body:payload=b'<html>login or attachment</html>'
+  if path=='/bulk':payload=DATA*4
+  total=len(payload)
   validator='"fixture-v2"' if path=='/changed' and body else '"fixture-v1"'
   ranged=self.headers.get('Range') if path not in ['/norange','/ignore','/weakignore','/omitignore','/changed','/nohead','/retryfull','/gethtml','/htmlattachment'] else None
   if ranged:
@@ -61,7 +69,7 @@ class Handler(BaseHTTPRequestHandler):
    start,end=map(int,match.groups())
    if start> end or end>=len(payload):self.send_error(416);return
    payload=payload[start:end+1];self.send_response(206)
-   self.send_header('Content-Range',f'bytes {start+1 if path=="/bad" else start}-{end}/{len(DATA)}')
+   self.send_header('Content-Range',f'bytes {start+1 if path=="/bad" else start}-{end}/{total}')
   else:self.send_response(200)
   if path not in ['/unknown','/gethtml','/htmlattachment']:self.send_header('Content-Length',str(len(payload)))
   if path in ['/gethtml','/htmlattachment'] and body:self.send_header('Content-Type','text/html')

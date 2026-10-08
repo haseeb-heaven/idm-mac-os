@@ -56,12 +56,14 @@ public struct DownloadEngine: Sendable {
             config.connectionProxyDictionary = ["HTTPEnable": 1, "HTTPProxy": host, "HTTPPort": port,
                                                "HTTPSEnable": 1, "HTTPSProxy": host, "HTTPSPort": port]
         }
-        let session = URLSession(configuration: config)
+        let chunks = HTTPChunkStream()
+        let session = URLSession(configuration: config,delegate:chunks,delegateQueue:nil)
         defer { session.invalidateAndCancel() }
         let manifestURL = directory.appendingPathComponent("manifest.json")
         var inspected = try await inspectWithRetry(job.url, session: session, authorization: authorization, options: options)
         if !options.useRanges { inspected.ranges = false }
         let fresh = inspected
+        let transferAuthorization = HTTPChunkStream.sameOrigin(job.url,fresh.finalURL) ? authorization : nil
         if let data = try? Data(contentsOf: manifestURL), let old = try? JSONDecoder().decode(Manifest.self, from: data) {
             if old.url != fresh.url || old.finalURL != fresh.finalURL || old.length != fresh.length || old.validator == nil ||
                 old.validator != fresh.validator || old.ranges != fresh.ranges || old.chunkBytes != fresh.chunkBytes {
@@ -95,9 +97,9 @@ public struct DownloadEngine: Sendable {
                 group.addTask {
                     let start = Int64(index) * options.chunkBytes
                     let end = ranged ? min(start + options.chunkBytes - 1, fresh.length - 1) : nil
-                    try await transfer(url: job.url, manifest: fresh, start: ranged ? start : nil, end: end,
+                    try await transfer(url: fresh.finalURL, manifest: fresh, start: ranged ? start : nil, end: end,
                                        file: directory.appendingPathComponent("\(index).part"), session: session,
-                                       authorization: authorization, retries: options.retries, meter: meter)
+                                       authorization: transferAuthorization, retries: options.retries, meter: meter, chunks: chunks)
                 }
             }
             for _ in 0..<min(count, options.connections) { enqueue(next); next += 1 }
@@ -205,7 +207,7 @@ public struct DownloadEngine: Sendable {
         return (try FileManager.default.attributesOfItem(atPath: url.path)[.size] as? NSNumber)?.int64Value ?? 0
     }
     private func transfer(url: URL, manifest: Manifest, start: Int64?, end: Int64?, file: URL,
-                          session: URLSession, authorization: String?, retries: Int, meter: Meter) async throws {
+                          session: URLSession, authorization: String?, retries: Int, meter: Meter, chunks: HTTPChunkStream) async throws {
         for attempt in 0...retries {
             try Task.checkCancellation()
             do {
@@ -217,9 +219,9 @@ public struct DownloadEngine: Sendable {
                     req.setValue("bytes=\(start + existing)-\(end)", forHTTPHeaderField: "Range")
                     req.setValue(manifest.validator, forHTTPHeaderField: "If-Range")
                 }
-                let (bytes, response) = try await session.bytes(for: req)
-                defer { bytes.task.cancel() }
-                guard let http = response as? HTTPURLResponse else { throw DownloadError.http(0) }
+                let opened = try await chunks.open(req,session:session)
+                defer { opened.task.cancel() }
+                let http = opened.response
                 try validateResponse(http)
                 if let start, let end {
                     guard http.statusCode == 206 else {
@@ -238,13 +240,14 @@ public struct DownloadEngine: Sendable {
                 try handle.seekToEnd()
                 var buffer = Data(); buffer.reserveCapacity(65536)
                 var received = existing
-                for try await byte in bytes {
-                    buffer.append(byte)
-                    if buffer.count == 65536 {
-                        try Task.checkCancellation()
-                        if let start, let end, received + Int64(buffer.count) > end - start + 1 { throw DownloadError.invalidRange }
-                        try handle.write(contentsOf: buffer); received += Int64(buffer.count)
-                        try await meter.record(buffer.count); buffer.removeAll(keepingCapacity: true)
+                for try await data in opened.chunks {
+                    defer { chunks.consumed(data.count,task:opened.task) }
+                    try Task.checkCancellation()
+                    buffer.append(data)
+                    while buffer.count >= 65536 {
+                        if let start, let end, received + 65536 > end - start + 1 { throw DownloadError.invalidRange }
+                        try handle.write(contentsOf:buffer.prefix(65536));received += 65536
+                        try await meter.record(65536);buffer.removeFirst(65536)
                     }
                 }
                 try Task.checkCancellation()
