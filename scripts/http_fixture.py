@@ -42,8 +42,9 @@ class Handler(BaseHTTPRequestHandler):
       self.wfile.write(DATA[offset:offset+size])
     except (BrokenPipeError,ConnectionResetError,OSError):pass
    return
-  if path=='/page':
+  if path in ['/page','/basepage']:
    payload=b'<html><a href="/asset.zip">zip</a><a href="/page">page</a><a href="/asset.zip">duplicate</a><script src="javascript:x"></script></html>'
+   if path=='/basepage':payload=b'<html><base href="/assets/"><a href="file.zip">zip</a></html>'
    self.send_response(200);self.send_header('Content-Type','text/html');self.send_header('Content-Length',str(len(payload)));self.end_headers()
    if body:self.wfile.write(payload)
    return
