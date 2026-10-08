@@ -28,7 +28,7 @@ Follow the useful principles from `../open-igi/RE.md`: preserve provenance; do n
 7. Record each finding with binary hash, RVA/VA, image base, tool output, interpretation, confidence, and unresolved questions. Decompiler output alone is a hypothesis.
 8. Observe the licensed Windows application in an isolated compatible environment to document screens, state transitions, and download behavior. Never treat installer analysis as application behavior.
 9. Build a feature parity matrix linking observed behavior to evidence and macOS implementation status.
-10. Choose macOS architecture based on findings; implement the download engine, persistence, interface, and browser integration incrementally. Mark Windows-specific behavior requiring a macOS equivalent.
+10. Choose macOS architecture based on findings; implement the download engine, persistence, interface, incrementally; browser integration remains excluded. Mark Windows-specific behavior requiring a macOS equivalent.
 11. Compare the resulting app with the licensed reference across documented scenarios before marking any feature equivalent.
 
 ## Deliverables
@@ -38,7 +38,7 @@ Follow the useful principles from `../open-igi/RE.md`: preserve provenance; do n
 - `docs/findings/`: function and subsystem evidence.
 - `docs/parity.md`: feature coverage.
 - `scripts/`: repeatable analysis tooling.
-- `src/`: macOS implementation once subsystem behavior is established.
+- `Sources/`: macOS implementation once subsystem behavior is established.
 
 ## Agent handoff prompt
 
@@ -46,4 +46,4 @@ Continue this personal IDM macOS project. Read RE.md and recorded evidence first
 
 ## Implementation progress
 
-Application extracted, imported and analyzed using GhidraMCP; HTTP range functions decompiled and independently checked with Radare2 MCP. See docs/findings/http-engine.md. CrossOver reference application runs locally. Native macOS implementation and deterministic tests are in progress.
+Application extracted, imported and analyzed using GhidraMCP; HTTP range functions decompiled and independently checked with Radare2 MCP. See docs/findings/http-engine.md. CrossOver reference application runs locally. The native implementation, checksum tests, native UI integration checks, and original-IDM speed comparisons are recorded in docs/native-port.md and docs/speed-comparison.md.

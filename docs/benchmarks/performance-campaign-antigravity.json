@@ -1,0 +1,70 @@
+{
+  "startedUTC": "2026-10-08T21:22:45Z",
+  "nativeConnections": 16,
+  "nativeChunkBytes": 8388608,
+  "nativeBinarySHA256": "a1f753e8ba64dc1ae2de01138dace1a8738d13345350de9c93e837b391393324",
+  "originalSettings": "unmodified isolated reference installation defaults",
+  "timing": "command dispatch through full-file completion and checksum, including launcher overhead",
+  "runs": [
+    {
+      "engine": "original-idm-crossover",
+      "name": "Antigravity",
+      "trial": 1,
+      "bytes": 206573240,
+      "seconds": 72.961557,
+      "MBps": 2.831261,
+      "sha256": "3173879ca84376794ed49c7935a8dfcfa145a17ca5e3f6793291f43803be06e2",
+      "pairChecksumMatched": true
+    },
+    {
+      "engine": "native-release",
+      "name": "Antigravity",
+      "trial": 1,
+      "bytes": 206573240,
+      "seconds": 23.914546,
+      "MBps": 8.637974,
+      "sha256": "3173879ca84376794ed49c7935a8dfcfa145a17ca5e3f6793291f43803be06e2",
+      "pairChecksumMatched": true
+    },
+    {
+      "engine": "native-release",
+      "name": "Antigravity",
+      "trial": 2,
+      "bytes": 206573240,
+      "seconds": 22.229861,
+      "MBps": 9.292601,
+      "sha256": "3173879ca84376794ed49c7935a8dfcfa145a17ca5e3f6793291f43803be06e2",
+      "pairChecksumMatched": true
+    },
+    {
+      "engine": "original-idm-crossover",
+      "name": "Antigravity",
+      "trial": 2,
+      "bytes": 206573240,
+      "seconds": 21.966129,
+      "MBps": 9.404171,
+      "sha256": "3173879ca84376794ed49c7935a8dfcfa145a17ca5e3f6793291f43803be06e2",
+      "pairChecksumMatched": true
+    },
+    {
+      "engine": "original-idm-crossover",
+      "name": "Antigravity",
+      "trial": 3,
+      "bytes": 206573240,
+      "seconds": 131.840082,
+      "MBps": 1.566847,
+      "sha256": "3173879ca84376794ed49c7935a8dfcfa145a17ca5e3f6793291f43803be06e2",
+      "pairChecksumMatched": true
+    },
+    {
+      "engine": "native-release",
+      "name": "Antigravity",
+      "trial": 3,
+      "bytes": 206573240,
+      "seconds": 22.755545,
+      "MBps": 9.07793,
+      "sha256": "3173879ca84376794ed49c7935a8dfcfa145a17ca5e3f6793291f43803be06e2",
+      "pairChecksumMatched": true
+    }
+  ]
+}

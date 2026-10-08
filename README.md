@@ -1,50 +1,92 @@
 # IDM Mac
 
-Personal native Apple Silicon macOS download manager for `haseeb-heaven`. Built with Swift 6 and AppKit, informed by analysis of the owner's licensed Windows IDM application.
+**A personal, native Apple Silicon download manager informed by reverse engineering of Windows IDM.**
 
-## Run
+Swift 6 · AppKit · URLSession · SQLite · Keychain · macOS 15+
+
+This is an independent project for `haseeb-heaven`, with no affiliation or endorsement from Tonec. It is not an official “IDM for Mac” release. The owner's Windows copy supplies the analysis and execution reference.
+
+![Native macOS interface during an actual integration test](docs/screenshots/idm-light-downloads.png)
+
+## Start here
+
+| Topic | Evidence |
+| --- | --- |
+| How the macOS implementation was built | [Native port, provenance, architecture, and tools](docs/native-port.md) |
+| Original executable analysis | [GhidraMCP and Radare2 MCP findings](docs/findings/http-engine.md) |
+| Download correctness | [Real URLs, file sizes, and SHA-256 results](docs/real-url-verification.md) |
+| Original IDM speed comparison | [Paired download methodology and results](docs/speed-comparison.md) |
+| Feature status and limitations | [Coverage matrix](docs/parity.md) |
+| Regression checks and review | [Verification record](docs/verification.md) |
+
+## Build and run
 
 ```sh
+git clone git@github.com:haseeb-heaven/idm-mac-os.git
+cd idm-mac-os
 scripts/package.sh
 open "build/IDM Mac.app"
 ```
 
-Requires macOS 15+, Apple Silicon, Python 3.12 for the fixtures, and Swift 6 Command Line Tools. No full Xcode installation or external Swift packages are needed. `scripts/swift.sh` handles the inconsistent private SwiftPM interfaces found on this Mac using a project-local copy of the public interfaces.
+Requirements: Apple Silicon Mac, macOS 15+, Swift 6 Command Line Tools, and Python 3.12 for test fixtures. The Swift package has no external dependencies. A full Xcode installation is unnecessary. `scripts/swift.sh` handles the inconsistent SwiftPM interfaces on the development Mac using a project-local public-interface copy.
+
+The release bundle is locally ad hoc signed. App data is stored in `~/Library/Application Support/IDMMac/`; credentials are stored in Keychain.
 
 ## Features
 
-- Manual HTTP/HTTPS and batch URL downloads.
-- Concurrent byte ranges, pause/resume, safe fallback when ranges are ignored, retries, redirects, and file assembly.
-- SQLite job persistence and recovery after restart; Keychain Basic authentication credentials.
-- Proxy configuration, speed limits, FIFO queue, and scheduled start times while the app is running.
-- IDM-inspired light theme, colored toolbar with overflow handling, category icons, file grid, progress bars, and live details with full errors.
-- Basic single-page file-link grabber with deduplication and a review step.
+- Manual HTTP/HTTPS and batch downloads with validated concurrent byte ranges.
+- Partial-file pause/resume, response validators, retries, redirects, and safe final assembly.
+- SQLite persistence and recovery after restart; Keychain Basic authentication.
+- Proxy settings, aggregate rate limits, FIFO queue, and per-job scheduled start times.
+- IDM-inspired light theme, colored toolbar, category icons, file grid, progress bars, and live details.
+- Single-page file-link grabber with deduplication and review before downloading.
 
-Browser integration is excluded. Complete IDM behavior parity is **not verified**: dynamic segmentation policy, advanced recurring schedules, named queues, recursive grabber workflows, FTP, and Windows-specific integrations are not implemented. See [feature coverage](docs/parity.md).
+Browser integration is excluded. Dynamic IDM segmentation, advanced recurring schedules, multiple named queues, recursive grabbing, FTP, and Windows-specific integrations remain unsupported or unverified. Speed measurements apply to the recorded environment and files; universal performance parity is not established.
 
 ## Verify
 
 ```sh
+# Core checks, release packaging, and actual native toolbar/queue end-to-end checks:
 scripts/test.sh
-# Instrument core and native UI checks; generate line/region coverage and HTML reports:
+
+# Instrumented core/UI coverage and browsable uncovered lines:
 scripts/coverage.sh
-# Opt-in real installer downloads with independent curl checksum comparisons:
+
+# Opt-in complete downloads with independent curl SHA-256 references:
 python3 scripts/real_download_checks.py
-# Full-size acceptance test; generates and removes 5 GiB locally:
+
+# Opt-in 5 GiB acceptance test; removes the generated file afterward:
 scripts/swift.sh run --disable-sandbox -c release IDMCoreChecks --large
-# Independent HTTPS reference and native download comparison:
-curl -fsSL https://raw.githubusercontent.com/github/gitignore/main/Swift.gitignore -o build/https-reference.txt
-scripts/swift.sh run --disable-sandbox IDMCoreChecks --https
 ```
 
-The integration executable is used because this machine's Command Line Tools do not contain XCTest. It exercises real URLSession requests, actual file IO, SQLite, Keychain, and a deterministic loopback server. Test failures return a nonzero exit code. Read [verification results](docs/verification.md) for recorded outcomes and limits.
+The executable test runner is used because this Mac's Command Line Tools do not provide XCTest. It exercises real HTTP requests, file IO, SQLite, Keychain, restart behavior, and AppKit controls. Test failures return nonzero exit status. Measured coverage and its gaps are published with the results.
 
-## Download failures
+**Recorded checks:** 47 core checks, native AppKit pause/resume and checksum checks, complete 5 GiB acceptance with an asserted 1 GiB memory ceiling, and real paired installer downloads. Latest line coverage: **96.90% core**, **81.44% UI**.
 
-Select a failed download and choose **Details**. The window shows the full error, lets you retry, and offers **Open Page**. Websites requiring browser verification may reject a standalone download manager. Copy the actual file URL from the browser once available. Ordinary HTML pages are rejected; explicitly attached HTML files are supported.
+## Compare with Windows IDM
 
-## Research
+Original IDM runs in a project-local CrossOver bottle. The benchmark invokes its supported command-line interface, waits for complete files, verifies SHA-256 hashes, alternates run order, and records elapsed time and decimal MB/s.
 
-[RE.md](RE.md) documents the analysis workflow. [HTTP engine findings](docs/findings/http-engine.md) link original function addresses to GhidraMCP decompilation and independent Radare2 MCP evidence. Proprietary binaries and license keys stay outside Git. Local app data lives in `~/Library/Application Support/IDMMac/`.
+```sh
+scripts/swift.sh build --disable-sandbox -c release --product IDMCoreChecks
+python3 scripts/compare_idm_speed.py --trials 3
+```
 
-[Real URL test results and measured coverage](docs/real-url-verification.md).
+CrossOver, the owner's IDM installer, the reference bottle, and optional MinGW-built dialog observer are local prerequisites. See the [methodology](docs/speed-comparison.md) for setup, excluded trials, units, and comparison limits. Proprietary binaries and credentials are excluded from Git.
+
+## Troubleshooting
+
+Select a failed job for the full error and retry controls. Browser-verification pages can reject standalone clients. Signed download URLs can expire; use a stable publisher/release URL to obtain a fresh redirect. A `blob:` URL identifies data in its originating browser environment: save it from that tab or supply an HTTP/HTTPS source URL.
+
+## Repository layout
+
+```text
+Sources/IDMCore/       Native transfer, persistence, credentials, queue, and grabber
+Sources/IDMMac/        AppKit application and interface
+Tests/IDMCoreTests/   Executable functional/integration checks
+scripts/              Analysis, build, test, coverage, and benchmark tooling
+analysis/raw/         Original binary identity and actual MCP output
+docs/                 Findings, coverage, comparisons, screenshots, and limits
+```
+
+[RE.md](RE.md) records the reverse-engineering workflow. [AGENTS.md](AGENTS.md) defines the development, testing, review, and publication rules. Original installers, extracted executables, activation keys, and build products remain local.

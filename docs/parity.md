@@ -20,4 +20,4 @@ This is implementation coverage, not a claim of 100% IDM equivalence.
 | Browser integration | Excluded | User-requested exclusion |
 | FTP / Windows-specific features | Not implemented | No equivalence claim |
 
-Windows IDM ran under CrossOver for layout observation. Full comparative behavior testing against the Windows application has not been completed.
+Windows IDM ran under CrossOver for layout observation. Paired full-file downloads and throughput comparisons against the original application are recorded in [speed comparison](speed-comparison.md). Full comparative testing of all features remains incomplete.

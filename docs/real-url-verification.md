@@ -35,3 +35,9 @@ Blob URL behavior is documented by [MDN](https://developer.mozilla.org/en-US/doc
 ## OpenQodex review
 
 The final review (`cb8e8baaf94b`, against `993b45d`) passed with no findings on changed lines after fixing test exit status and saved-proxy isolation. [Full report](openqodex-e2e-review.md).
+
+## Subsequent performance release
+
+The chunk-stream release passes **47 checks**, including backpressure, pre-header cancellation, and credential redirect boundaries. Latest core line coverage is **97.05%** (region coverage **87.53%**); UI line coverage remains **81.44%**. See [verification](verification.md) and [original IDM comparison](speed-comparison.md). The 43-check results above describe the earlier installer-verification run.
+
+The subsequent large-file memory correction is also tested. Latest measured coverage after adding scoped autorelease pools is **96.90% core lines** and **81.44% UI lines**. Earlier percentages above identify their respective earlier builds.
