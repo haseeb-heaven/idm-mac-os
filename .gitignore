@@ -1,0 +1,11 @@
+.DS_Store
+samples/
+analysis/ghidra/
+analysis/work/
+*.exe
+*.dll
+*.pdb
+*.key
+.env*
+.build/
+DerivedData/
