@@ -1,0 +1,8 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "fcn.0058b320 0x58b80d [DATA:r--] push str.Range:_bytes_I64d__I64d_r_n\nfcn.0058b320 0x58b890 [DATA:r--] push str.Range:_bytes_I64d__I64d_r_n\nfcn.0058b320 0x58b95a [DATA:r--] push str.Range:_bytes_I64d__I64d_r_n\nfcn.0058b320 0x58bc4d [DATA:r--] push str.Range:_bytes_I64d__I64d_r_n\nmethod.ProxyConnection.virtual_32 0x5af215 [DATA:r--] push str.Range:_bytes_I64d__I64d_r_n\nmethod.ProxyConnection.virtual_32 0x5af2aa [DATA:r--] push str.Range:_bytes_I64d__I64d_r_n\nmethod.ProxyConnection.virtual_32 0x5af398 [DATA:r--] push str.Range:_bytes_I64d__I64d_r_n\nmethod.ProxyConnection.virtual_32 0x5af4d1 [DATA:r--] push str.Range:_bytes_I64d__I64d_r_n\n"
+    }
+  ]
+}

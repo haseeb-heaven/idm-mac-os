@@ -1,0 +1,22 @@
+{
+  "content": [
+    {
+      "text": "ok session_id=97960c9e5f954a64bd09abd24626e783",
+      "type": "text"
+    }
+  ],
+  "isError": false,
+  "structuredContent": {
+    "function": {
+      "body_end": "005b0134",
+      "body_start": "005ae8e0",
+      "calling_convention": "unknown",
+      "entry_point": "005ae8e0",
+      "external": false,
+      "name": "FUN_005ae8e0",
+      "signature": "undefined FUN_005ae8e0()",
+      "thunk": false
+    },
+    "session_id": "97960c9e5f954a64bd09abd24626e783"
+  }
+}

@@ -1,0 +1,23 @@
+[
+  {
+    "name": "VS Code",
+    "url": "https://code.visualstudio.com/sha/download?build=stable&os=darwin-arm64-dmg",
+    "referenceSucceeded": true,
+    "nativeSucceeded": true,
+    "nativeOutput": "DOWNLOAD SUCCEEDED: 295206425 bytes, SHA256 ab0ecc74855d5d38e898605234bc033b27b79f202e6f12a11442fc410ae06561"
+  },
+  {
+    "name": "Cursor",
+    "url": "https://api2.cursor.sh/updates/download/golden/darwin-arm64/cursor/3.23",
+    "referenceSucceeded": true,
+    "nativeSucceeded": true,
+    "nativeOutput": "DOWNLOAD SUCCEEDED: 294097415 bytes, SHA256 5c500fe24dd463666a152cb35e63a7006f203ec2f8b15dcfbfa1364b64585773"
+  },
+  {
+    "name": "Antigravity",
+    "url": "https://storage.googleapis.com/antigravity-public/antigravity-hub/2.21.1-5614635819335680/darwin-arm/Antigravity.dmg",
+    "referenceSucceeded": true,
+    "nativeSucceeded": true,
+    "nativeOutput": "DOWNLOAD SUCCEEDED: 206573240 bytes, SHA256 3173879ca84376794ed49c7935a8dfcfa145a17ca5e3f6793291f43803be06e2"
+  }
+]

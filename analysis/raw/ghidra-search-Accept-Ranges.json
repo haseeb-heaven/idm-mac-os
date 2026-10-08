@@ -1,0 +1,35 @@
+{
+  "content": [
+    {
+      "text": "ok session_id=92e1ecfd8635410f8c9b024787b9c519 count=2",
+      "type": "text"
+    }
+  ],
+  "isError": false,
+  "structuredContent": {
+    "case_sensitive": false,
+    "count": 2,
+    "defined_strings_only": false,
+    "encoding": "utf-8",
+    "end": null,
+    "items": [
+      {
+        "address": "006cfcc0",
+        "data_type": "/string",
+        "kind": "defined_string",
+        "length": 15,
+        "value": "accept-ranges:"
+      },
+      {
+        "address": "006d5d64",
+        "data_type": "/string",
+        "kind": "defined_string",
+        "length": 16,
+        "value": "accept-ranges"
+      }
+    ],
+    "query": "Accept-Ranges",
+    "session_id": "92e1ecfd8635410f8c9b024787b9c519",
+    "start": null
+  }
+}

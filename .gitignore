@@ -9,3 +9,9 @@ analysis/work/
 .env*
 .build/
 DerivedData/
+
+.venv/
+.swiftpm/
+build/
+.openqodex/
+__pycache__/

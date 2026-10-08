@@ -1,0 +1,28 @@
+{
+  "content": [
+    {
+      "text": "ok session_id=97960c9e5f954a64bd09abd24626e783",
+      "type": "text"
+    }
+  ],
+  "isError": false,
+  "structuredContent": {
+    "c": "\nint __thiscall\nFUN_00582780(int param_1,undefined4 param_2,undefined4 param_3,undefined4 *param_4,\n            undefined4 param_5)\n\n{\n  char cVar1;\n  int iVar2;\n  undefined4 uVar3;\n  char *pcVar4;\n  int iVar5;\n  void *local_10;\n  undefined1 *puStack_c;\n  undefined4 local_8;\n  \n  puStack_c = &LAB_0067eda0;\n  local_10 = ExceptionList;\n  ExceptionList = &local_10;\n  local_8 = 0;\n  do {\n    iVar2 = FUN_00580d50();\n    if (iVar2 != 0) {\n      ExceptionList = local_10;\n      return iVar2;\n    }\n    while( true ) {\n      pcVar4 = *(char **)(param_1 + 0x3258);\n      if (*pcVar4 == '\\n') goto LAB_005827f1;\n      if ((*pcVar4 == '\\r') && (pcVar4[1] == '\\n')) break;\n      if ((*(char *)(param_1 + 0x3280) != '\\0') &&\n         (pcVar4 = _strstr(pcVar4,*(char **)(param_1 + 0x327c)), pcVar4 != (char *)0x0)) {\n        *(undefined1 *)(param_1 + 0x3280) = 0;\n      }\n      iVar2 = *(int *)(param_1 + 0x3258);\n      iVar5 = FUN_005803a0(iVar2);\n      iVar2 = __memicmp((void *)(iVar2 + iVar5),\"content-length:\",0xf);\n      if (iVar2 == 0) {\n        FID_conflict__sscanf((char *)(*(int *)(param_1 + 0x3258) + 0xf + iVar5),\"%I64d\",param_2);\n      }\n      iVar2 = __memicmp((void *)(*(int *)(param_1 + 0x3258) + iVar5),\"Content-Range:\",0xe);\n      if (iVar2 == 0) {\n        pcVar4 = _strstr((char *)(*(int *)(param_1 + 0x3258) + 0xe + iVar5),\"bytes\");\n        if (pcVar4 != (char *)0x0) {\n          FUN_005803a0(pcVar4 + 5);\n          FID_conflict__sscanf(pcVar4 + iVar5 + 5,\"%I64d\",param_3);\n        }\n        pcVar4 = _strchr((char *)(*(int *)(param_1 + 0x3258) + 0xe + iVar5),0x2f);\n        if (pcVar4 != (char *)0x0) {\n          cVar1 = pcVar4[1];\n          if ((cVar1 != '\\r') && (cVar1 != '\\n')) {\n            FID_conflict__sscanf(pcVar4 + 1,\"%I64d\",param_5);\n          }\n        }\n        pcVar4 = _strchr((char *)(*(int *)(param_1 + 0x3258) + 0xe + iVar5),0x2d);\n        if (pcVar4 != (char *)0x0) {\n          cVar1 = pcVar4[1];\n          if (((cVar1 != '\\r') && (cVar1 != '\\n')) &&\n             (iVar2 = FID_conflict__sscanf(pcVar4 + 1,\"%I64d\",param_4), iVar2 < 1)) {\n            *param_4 = 0;\n            param_4[1] = 0;\n          }\n        }\n      }\n      FUN_00581c80();\n      iVar2 = FUN_00580d50();\n      if (iVar2 != 0) {\n        ExceptionList = local_10;\n        return iVar2;\n      }\n    }\n  } while (*(char *)(param_1 + 0x3280) != '\\0');\nLAB_005827f1:\n  *(undefined4 *)(param_1 + 0x3204) = 0;\n  uVar3 = FUN_00566d50();\n  FUN_00574b80(uVar3);\n  FUN_00566d80();\n  *(undefined4 *)(param_1 + 0xa4) = 5;\n  ExceptionList = local_10;\n  return 0;\n}\n\n",
+    "cancelled": false,
+    "decompile_completed": true,
+    "error_message": "",
+    "function": {
+      "body_end": "005829d5",
+      "body_start": "00582780",
+      "calling_convention": "unknown",
+      "entry_point": "00582780",
+      "external": false,
+      "name": "FUN_00582780",
+      "signature": "undefined FUN_00582780()",
+      "thunk": false
+    },
+    "session_id": "97960c9e5f954a64bd09abd24626e783",
+    "signature": "int __thiscall FUN_00582780(int param_1,undefined4 param_2,undefined4 param_3,undefined4 *param_4,undefined4 param_5);",
+    "timed_out": false
+  }
+}
