@@ -1,0 +1,6298 @@
+{
+  "has_more": false,
+  "limit": 212,
+  "offset": 0,
+  "tools": [
+    {
+      "description": "Confirm that the server is reachable and responding.",
+      "inputSchema": {
+        "properties": {},
+        "type": "object"
+      },
+      "name": "health.ping"
+    },
+    {
+      "description": "Explain how MCP tool responses split full structured data and human-readable summary text.",
+      "inputSchema": {
+        "properties": {},
+        "type": "object"
+      },
+      "name": "mcp.response_format"
+    },
+    {
+      "description": "List boolean analyzers available for the current program and show whether each one is enabled.",
+      "inputSchema": {
+        "properties": {
+          "limit": {
+            "type": "integer"
+          },
+          "offset": {
+            "type": "integer"
+          },
+          "query": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "analysis.analyzers.list"
+    },
+    {
+      "description": "Enable or disable a specific boolean analyzer for the current program.",
+      "inputSchema": {
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "name",
+          "enabled"
+        ],
+        "type": "object"
+      },
+      "name": "analysis.analyzers.set"
+    },
+    {
+      "description": "Clear cached decompiler state for the current session so later requests rebuild it cleanly.",
+      "inputSchema": {
+        "properties": {
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "analysis.clear_cache"
+    },
+    {
+      "description": "Return the current value of a specific analysis option.",
+      "inputSchema": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "name"
+        ],
+        "type": "object"
+      },
+      "name": "analysis.options.get"
+    },
+    {
+      "description": "List available analysis options together with their current values.",
+      "inputSchema": {
+        "properties": {
+          "limit": {
+            "type": "integer"
+          },
+          "offset": {
+            "type": "integer"
+          },
+          "query": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "analysis.options.list"
+    },
+    {
+      "description": "Update the value of an analysis option for the current session.",
+      "inputSchema": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "value": {}
+        },
+        "required": [
+          "session_id",
+          "name",
+          "value"
+        ],
+        "type": "object"
+      },
+      "name": "analysis.options.set"
+    },
+    {
+      "description": "Return the current auto-analysis status for the session.",
+      "inputSchema": {
+        "properties": {
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "analysis.status"
+    },
+    {
+      "description": "Start auto-analysis in the background and return immediately.",
+      "inputSchema": {
+        "properties": {
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "analysis.update"
+    },
+    {
+      "description": "Run auto-analysis and wait until it completes.",
+      "inputSchema": {
+        "properties": {
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "analysis.update_and_wait"
+    },
+    {
+      "description": "Add a bookmark at an address with a type, category, and comment.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "bookmark_type": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "comment": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "address",
+          "category",
+          "comment"
+        ],
+        "type": "object"
+      },
+      "name": "bookmark.add"
+    },
+    {
+      "description": "Remove bookmarks in an address range, optionally filtered by bookmark type.",
+      "inputSchema": {
+        "properties": {
+          "bookmark_type": {
+            "type": "string"
+          },
+          "end": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "length": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "session_id",
+          "start"
+        ],
+        "type": "object"
+      },
+      "name": "bookmark.clear"
+    },
+    {
+      "description": "List bookmarks, optionally scoped to an address or bookmark type.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "bookmark_type": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "offset": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "bookmark.list"
+    },
+    {
+      "description": "Remove bookmarks at an address, optionally filtered by type or category.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "bookmark_type": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "address"
+        ],
+        "type": "object"
+      },
+      "name": "bookmark.remove"
+    },
+    {
+      "description": "Create a class namespace for recovered methods or fields.",
+      "inputSchema": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "parent": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "name"
+        ],
+        "type": "object"
+      },
+      "name": "class.create"
+    },
+    {
+      "description": "Return one comment type from a specific address.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "comment_type": {
+            "type": "string"
+          },
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "scope": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "comment.get"
+    },
+    {
+      "description": "Return all available comment types at an address, with optional function comments.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "include_function": {
+            "type": "boolean"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "address"
+        ],
+        "type": "object"
+      },
+      "name": "comment.get_all"
+    },
+    {
+      "description": "List comments matching range, type, text, and pagination filters.",
+      "inputSchema": {
+        "properties": {
+          "case_sensitive": {
+            "type": "boolean"
+          },
+          "comment_type": {
+            "type": "string"
+          },
+          "end": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "offset": {
+            "type": "integer"
+          },
+          "query": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "comment.list"
+    },
+    {
+      "description": "Set or clear a comment of a selected type at an address.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "comment": {
+            "type": "string"
+          },
+          "comment_type": {
+            "type": "string"
+          },
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "scope": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "comment"
+        ],
+        "type": "object"
+      },
+      "name": "comment.set"
+    },
+    {
+      "description": "Return processor context register values at a specific address.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "register": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "signed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "session_id",
+          "register",
+          "address"
+        ],
+        "type": "object"
+      },
+      "name": "context.get"
+    },
+    {
+      "description": "List address ranges where a processor context register value applies.",
+      "inputSchema": {
+        "properties": {
+          "end": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "register": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "session_id",
+          "register"
+        ],
+        "type": "object"
+      },
+      "name": "context.ranges"
+    },
+    {
+      "description": "Set processor context register values across an address range.",
+      "inputSchema": {
+        "properties": {
+          "clear": {
+            "type": "boolean"
+          },
+          "end": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "length": {
+            "type": "integer"
+          },
+          "register": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "value": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "session_id",
+          "register",
+          "start"
+        ],
+        "type": "object"
+      },
+      "name": "context.set"
+    },
+    {
+      "description": "Decompile a function and return the Clang markup tree for the result.",
+      "inputSchema": {
+        "properties": {
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "timeout_secs": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start"
+        ],
+        "type": "object"
+      },
+      "name": "decomp.ast"
+    },
+    {
+      "description": "Decompile a function and return recovered C source code.",
+      "inputSchema": {
+        "properties": {
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "timeout_secs": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start"
+        ],
+        "type": "object"
+      },
+      "name": "decomp.function"
+    },
+    {
+      "description": "Rename a global symbol selected through decompiler high-symbol information.",
+      "inputSchema": {
+        "properties": {
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "new_name": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "storage": {
+            "type": "string"
+          },
+          "timeout_secs": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start",
+          "name",
+          "new_name"
+        ],
+        "type": "object"
+      },
+      "name": "decomp.global.rename"
+    },
+    {
+      "description": "Retype a global symbol selected through decompiler high-symbol information.",
+      "inputSchema": {
+        "properties": {
+          "data_type": {
+            "type": "string"
+          },
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "storage": {
+            "type": "string"
+          },
+          "timeout_secs": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start",
+          "name",
+          "data_type"
+        ],
+        "type": "object"
+      },
+      "name": "decomp.global.retype"
+    },
+    {
+      "description": "Summarize the high-function view, including local symbols, globals, blocks, and jump tables.",
+      "inputSchema": {
+        "properties": {
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "timeout_secs": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start"
+        ],
+        "type": "object"
+      },
+      "name": "decomp.high_function.summary"
+    },
+    {
+      "description": "Return the decompiler call override, if any, for a specific callsite.",
+      "inputSchema": {
+        "properties": {
+          "callsite": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start",
+          "callsite"
+        ],
+        "type": "object"
+      },
+      "name": "decomp.override.get"
+    },
+    {
+      "description": "Set or replace the decompiler call override signature for a specific callsite.",
+      "inputSchema": {
+        "properties": {
+          "callsite": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "signature": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start",
+          "callsite",
+          "signature"
+        ],
+        "type": "object"
+      },
+      "name": "decomp.override.set"
+    },
+    {
+      "description": "Decompile a function and return tokenized Clang markup for the output.",
+      "inputSchema": {
+        "properties": {
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "timeout_secs": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start"
+        ],
+        "type": "object"
+      },
+      "name": "decomp.tokens"
+    },
+    {
+      "description": "Trace type propagation backward from a selected decompiler symbol.",
+      "inputSchema": {
+        "properties": {
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "ordinal": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "storage": {
+            "type": "string"
+          },
+          "timeout_secs": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start",
+          "name"
+        ],
+        "type": "object"
+      },
+      "name": "decomp.trace_type.backward"
+    },
+    {
+      "description": "Trace type propagation forward from a selected decompiler symbol.",
+      "inputSchema": {
+        "properties": {
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "ordinal": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "storage": {
+            "type": "string"
+          },
+          "timeout_secs": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start",
+          "name"
+        ],
+        "type": "object"
+      },
+      "name": "decomp.trace_type.forward"
+    },
+    {
+      "description": "Commit decompiler-recovered local names back into the program database.",
+      "inputSchema": {
+        "properties": {
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "timeout_secs": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start"
+        ],
+        "type": "object"
+      },
+      "name": "decomp.writeback.locals"
+    },
+    {
+      "description": "Commit decompiler-recovered parameter information back into the program database.",
+      "inputSchema": {
+        "properties": {
+          "commit_return": {
+            "type": "boolean"
+          },
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "timeout_secs": {
+            "type": "integer"
+          },
+          "use_data_types": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start"
+        ],
+        "type": "object"
+      },
+      "name": "decomp.writeback.params"
+    },
+    {
+      "description": "Remove equate references across an address range and delete empty equates.",
+      "inputSchema": {
+        "properties": {
+          "end": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "length": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "session_id",
+          "start"
+        ],
+        "type": "object"
+      },
+      "name": "equate.clear_range"
+    },
+    {
+      "description": "Create an equate and attach it to an operand at an address.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "operand_index": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "value": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "session_id",
+          "address",
+          "name",
+          "value"
+        ],
+        "type": "object"
+      },
+      "name": "equate.create"
+    },
+    {
+      "description": "Delete an equate entirely, or remove one of its references before deletion.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "operand_index": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "name"
+        ],
+        "type": "object"
+      },
+      "name": "equate.delete"
+    },
+    {
+      "description": "List equates together with values and attached references.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "offset": {
+            "type": "integer"
+          },
+          "operand_index": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "equate.list"
+    },
+    {
+      "description": "Add an address to the program's external entry point set.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "address"
+        ],
+        "type": "object"
+      },
+      "name": "external.entrypoint.add"
+    },
+    {
+      "description": "List addresses currently marked as external entry points.",
+      "inputSchema": {
+        "properties": {
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "external.entrypoint.list"
+    },
+    {
+      "description": "Remove an address from the external entry point set.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "address"
+        ],
+        "type": "object"
+      },
+      "name": "external.entrypoint.remove"
+    },
+    {
+      "description": "List symbols exported by the program.",
+      "inputSchema": {
+        "properties": {
+          "limit": {
+            "type": "integer"
+          },
+          "offset": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "external.exports.list"
+    },
+    {
+      "description": "Create an external function symbol under an external location.",
+      "inputSchema": {
+        "properties": {
+          "external_address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "library_name": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "library_name",
+          "name"
+        ],
+        "type": "object"
+      },
+      "name": "external.function.create"
+    },
+    {
+      "description": "List symbols imported by the program.",
+      "inputSchema": {
+        "properties": {
+          "limit": {
+            "type": "integer"
+          },
+          "offset": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "external.imports.list"
+    },
+    {
+      "description": "Create a new external library record.",
+      "inputSchema": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "name"
+        ],
+        "type": "object"
+      },
+      "name": "external.library.create"
+    },
+    {
+      "description": "List external libraries known to the program.",
+      "inputSchema": {
+        "properties": {
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "external.library.list"
+    },
+    {
+      "description": "Set or update the filesystem path associated with an external library.",
+      "inputSchema": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "user_defined": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "session_id",
+          "name",
+          "path"
+        ],
+        "type": "object"
+      },
+      "name": "external.library.set_path"
+    },
+    {
+      "description": "Create an external location for a symbol within a library.",
+      "inputSchema": {
+        "properties": {
+          "external_address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "label": {
+            "type": "string"
+          },
+          "library_name": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "library_name"
+        ],
+        "type": "object"
+      },
+      "name": "external.location.create"
+    },
+    {
+      "description": "Return details for a specific external location.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "external.location.get"
+    },
+    {
+      "description": "Return the function that starts at, or contains, a specific address.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "address"
+        ],
+        "type": "object"
+      },
+      "name": "function.at"
+    },
+    {
+      "description": "Run one supported action across a filtered batch of functions.",
+      "inputSchema": {
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "offset": {
+            "type": "integer"
+          },
+          "query": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "timeout_secs": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "session_id",
+          "action"
+        ],
+        "type": "object"
+      },
+      "name": "function.batch.run"
+    },
+    {
+      "description": "Replace the body range of an existing function.",
+      "inputSchema": {
+        "properties": {
+          "end": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "length": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start",
+          "start"
+        ],
+        "type": "object"
+      },
+      "name": "function.body.set"
+    },
+    {
+      "description": "Look up a function by name and return its details.",
+      "inputSchema": {
+        "properties": {
+          "exact": {
+            "type": "boolean"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "name"
+        ],
+        "type": "object"
+      },
+      "name": "function.by_name"
+    },
+    {
+      "description": "List the functions called by a specific function.",
+      "inputSchema": {
+        "properties": {
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start"
+        ],
+        "type": "object"
+      },
+      "name": "function.callees"
+    },
+    {
+      "description": "List the functions that call a specific function.",
+      "inputSchema": {
+        "properties": {
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start"
+        ],
+        "type": "object"
+      },
+      "name": "function.callers"
+    },
+    {
+      "description": "Set the calling convention used by a function.",
+      "inputSchema": {
+        "properties": {
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start",
+          "name"
+        ],
+        "type": "object"
+      },
+      "name": "function.calling_convention.set"
+    },
+    {
+      "description": "List calling conventions available in the current program.",
+      "inputSchema": {
+        "properties": {
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "function.calling_conventions.list"
+    },
+    {
+      "description": "Create a new function at a given address.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "address"
+        ],
+        "type": "object"
+      },
+      "name": "function.create"
+    },
+    {
+      "description": "Delete a function at a given address.",
+      "inputSchema": {
+        "properties": {
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start"
+        ],
+        "type": "object"
+      },
+      "name": "function.delete"
+    },
+    {
+      "description": "Update function flags such as varargs, inline, noreturn, or custom storage.",
+      "inputSchema": {
+        "properties": {
+          "custom_storage": {
+            "type": "boolean"
+          },
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "inline": {
+            "type": "boolean"
+          },
+          "noreturn": {
+            "type": "boolean"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "varargs": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start"
+        ],
+        "type": "object"
+      },
+      "name": "function.flags.set"
+    },
+    {
+      "description": "List functions in the program with filtering and pagination support.",
+      "inputSchema": {
+        "properties": {
+          "limit": {
+            "type": "integer"
+          },
+          "offset": {
+            "type": "integer"
+          },
+          "query": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "function.list"
+    },
+    {
+      "description": "Rename an existing function.",
+      "inputSchema": {
+        "properties": {
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start",
+          "name"
+        ],
+        "type": "object"
+      },
+      "name": "function.rename"
+    },
+    {
+      "description": "Return a richer function report with signature, variables, call graph edges, xrefs, and decompilation output.",
+      "inputSchema": {
+        "properties": {
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start"
+        ],
+        "type": "object"
+      },
+      "name": "function.report"
+    },
+    {
+      "description": "Set the return type of a function.",
+      "inputSchema": {
+        "properties": {
+          "data_type": {
+            "type": "string"
+          },
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start",
+          "data_type"
+        ],
+        "type": "object"
+      },
+      "name": "function.return_type.set"
+    },
+    {
+      "description": "Return the full signature of a function.",
+      "inputSchema": {
+        "properties": {
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start"
+        ],
+        "type": "object"
+      },
+      "name": "function.signature.get"
+    },
+    {
+      "description": "Apply a full C-style signature declaration to a function.",
+      "inputSchema": {
+        "properties": {
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "signature": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start",
+          "signature"
+        ],
+        "type": "object"
+      },
+      "name": "function.signature.set"
+    },
+    {
+      "description": "Mark a function as a thunk to another function.",
+      "inputSchema": {
+        "properties": {
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "thunk_target": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start",
+          "thunk_target"
+        ],
+        "type": "object"
+      },
+      "name": "function.thunk.set"
+    },
+    {
+      "description": "List parameters and local variables for a function.",
+      "inputSchema": {
+        "properties": {
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start"
+        ],
+        "type": "object"
+      },
+      "name": "function.variables"
+    },
+    {
+      "description": "Invoke Ghidra or Java APIs directly through a generic bridge. Raw access to a read-only session requires write=true and transitions it to writable.",
+      "inputSchema": {
+        "properties": {
+          "args": {
+            "items": {},
+            "type": "array"
+          },
+          "kwargs": {
+            "type": "object"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          },
+          "write": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "target"
+        ],
+        "type": "object"
+      },
+      "name": "ghidra.call"
+    },
+    {
+      "description": "Evaluate Python code inside the live Ghidra runtime context. Raw access to a read-only session requires write=true and transitions it to writable.",
+      "inputSchema": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "write": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "type": "object"
+      },
+      "name": "ghidra.eval"
+    },
+    {
+      "description": "Return runtime information about Ghidra, PyGhidra, and the server environment.",
+      "inputSchema": {
+        "properties": {},
+        "type": "object"
+      },
+      "name": "ghidra.info"
+    },
+    {
+      "description": "Run a Ghidra script against an open program session. Raw access to a read-only session requires write=true and transitions it to writable.",
+      "inputSchema": {
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "script_args": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "write": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "type": "object"
+      },
+      "name": "ghidra.script"
+    },
+    {
+      "description": "List the basic blocks that make up a function.",
+      "inputSchema": {
+        "properties": {
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start"
+        ],
+        "type": "object"
+      },
+      "name": "graph.basic_blocks"
+    },
+    {
+      "description": "Find call graph paths between two functions up to a chosen depth.",
+      "inputSchema": {
+        "properties": {
+          "limit": {
+            "type": "integer"
+          },
+          "max_depth": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "source_function": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "target_function": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "session_id",
+          "source_function",
+          "target_function"
+        ],
+        "type": "object"
+      },
+      "name": "graph.call_paths"
+    },
+    {
+      "description": "List control-flow edges between the basic blocks of a function.",
+      "inputSchema": {
+        "properties": {
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start"
+        ],
+        "type": "object"
+      },
+      "name": "graph.cfg.edges"
+    },
+    {
+      "description": "Create an enum data type in a chosen category.",
+      "inputSchema": {
+        "properties": {
+          "category": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "session_id",
+          "name"
+        ],
+        "type": "object"
+      },
+      "name": "layout.enum.create"
+    },
+    {
+      "description": "Add a named value to an enum data type.",
+      "inputSchema": {
+        "properties": {
+          "comment": {
+            "type": "string"
+          },
+          "enum_name": {
+            "type": "string"
+          },
+          "enum_path": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "value": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "session_id",
+          "name",
+          "value"
+        ],
+        "type": "object"
+      },
+      "name": "layout.enum.member.add"
+    },
+    {
+      "description": "Remove a named member from an enum data type.",
+      "inputSchema": {
+        "properties": {
+          "enum_name": {
+            "type": "string"
+          },
+          "enum_path": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "name"
+        ],
+        "type": "object"
+      },
+      "name": "layout.enum.member.remove"
+    },
+    {
+      "description": "Inspect the component layout of a composite data type.",
+      "inputSchema": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "layout.inspect.components"
+    },
+    {
+      "description": "Insert a bitfield into a structure at a byte and bit offset.",
+      "inputSchema": {
+        "properties": {
+          "bit_offset": {
+            "type": "integer"
+          },
+          "bit_size": {
+            "type": "integer"
+          },
+          "byte_offset": {
+            "type": "integer"
+          },
+          "byte_width": {
+            "type": "integer"
+          },
+          "comment": {
+            "type": "string"
+          },
+          "data_type": {
+            "type": "string"
+          },
+          "field_name": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "struct_name": {
+            "type": "string"
+          },
+          "struct_path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "byte_offset",
+          "byte_width",
+          "bit_offset",
+          "data_type",
+          "bit_size"
+        ],
+        "type": "object"
+      },
+      "name": "layout.struct.bitfield.add"
+    },
+    {
+      "description": "Create a structure data type in a chosen category.",
+      "inputSchema": {
+        "properties": {
+          "category": {
+            "type": "string"
+          },
+          "length": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "name"
+        ],
+        "type": "object"
+      },
+      "name": "layout.struct.create"
+    },
+    {
+      "description": "Add a field to a structure at a specific offset or append position.",
+      "inputSchema": {
+        "properties": {
+          "comment": {
+            "type": "string"
+          },
+          "data_type": {
+            "type": "string"
+          },
+          "field_name": {
+            "type": "string"
+          },
+          "length": {
+            "type": "integer"
+          },
+          "offset": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "struct_name": {
+            "type": "string"
+          },
+          "struct_path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "data_type"
+        ],
+        "type": "object"
+      },
+      "name": "layout.struct.field.add"
+    },
+    {
+      "description": "Clear a field from a structure by offset, ordinal, or field name.",
+      "inputSchema": {
+        "properties": {
+          "offset": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "struct_name": {
+            "type": "string"
+          },
+          "struct_path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "offset"
+        ],
+        "type": "object"
+      },
+      "name": "layout.struct.field.clear"
+    },
+    {
+      "description": "Set or clear the comment on a structure field.",
+      "inputSchema": {
+        "properties": {
+          "comment": {
+            "type": "string"
+          },
+          "field_name": {
+            "type": "string"
+          },
+          "offset": {
+            "type": "integer"
+          },
+          "ordinal": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "struct_name": {
+            "type": "string"
+          },
+          "struct_path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "comment"
+        ],
+        "type": "object"
+      },
+      "name": "layout.struct.field.comment.set"
+    },
+    {
+      "description": "Rename a structure field.",
+      "inputSchema": {
+        "properties": {
+          "new_name": {
+            "type": "string"
+          },
+          "offset": {
+            "type": "integer"
+          },
+          "old_name": {
+            "type": "string"
+          },
+          "ordinal": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "struct_name": {
+            "type": "string"
+          },
+          "struct_path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "new_name"
+        ],
+        "type": "object"
+      },
+      "name": "layout.struct.field.rename"
+    },
+    {
+      "description": "Replace an existing structure field with a new type, size, name, or comment.",
+      "inputSchema": {
+        "properties": {
+          "comment": {
+            "type": "string"
+          },
+          "data_type": {
+            "type": "string"
+          },
+          "field_name": {
+            "type": "string"
+          },
+          "length": {
+            "type": "integer"
+          },
+          "offset": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "struct_name": {
+            "type": "string"
+          },
+          "struct_path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "offset",
+          "data_type"
+        ],
+        "type": "object"
+      },
+      "name": "layout.struct.field.replace"
+    },
+    {
+      "description": "Build or extend a structure from decompiler-observed usage of a variable.",
+      "inputSchema": {
+        "properties": {
+          "create_class_if_needed": {
+            "type": "boolean"
+          },
+          "create_new_structure": {
+            "type": "boolean"
+          },
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "ordinal": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "storage": {
+            "type": "string"
+          },
+          "timeout_secs": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start",
+          "name"
+        ],
+        "type": "object"
+      },
+      "name": "layout.struct.fill_from_decompiler"
+    },
+    {
+      "description": "Return a structure definition together with its components.",
+      "inputSchema": {
+        "properties": {
+          "session_id": {
+            "type": "string"
+          },
+          "struct_name": {
+            "type": "string"
+          },
+          "struct_path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "layout.struct.get"
+    },
+    {
+      "description": "Resize a structure to a specific total length.",
+      "inputSchema": {
+        "properties": {
+          "length": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "struct_name": {
+            "type": "string"
+          },
+          "struct_path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "length"
+        ],
+        "type": "object"
+      },
+      "name": "layout.struct.resize"
+    },
+    {
+      "description": "Create a union data type in a chosen category.",
+      "inputSchema": {
+        "properties": {
+          "category": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "name"
+        ],
+        "type": "object"
+      },
+      "name": "layout.union.create"
+    },
+    {
+      "description": "Add a member to a union data type.",
+      "inputSchema": {
+        "properties": {
+          "comment": {
+            "type": "string"
+          },
+          "data_type": {
+            "type": "string"
+          },
+          "field_name": {
+            "type": "string"
+          },
+          "length": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "union_name": {
+            "type": "string"
+          },
+          "union_path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "data_type"
+        ],
+        "type": "object"
+      },
+      "name": "layout.union.member.add"
+    },
+    {
+      "description": "Remove a member from a union data type.",
+      "inputSchema": {
+        "properties": {
+          "field_name": {
+            "type": "string"
+          },
+          "ordinal": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "union_name": {
+            "type": "string"
+          },
+          "union_path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "layout.union.member.remove"
+    },
+    {
+      "description": "Clear listing content over a range, including optional symbols, comments, references, functions, or context.",
+      "inputSchema": {
+        "properties": {
+          "clear_analysis_references": {
+            "type": "boolean"
+          },
+          "clear_bookmarks": {
+            "type": "boolean"
+          },
+          "clear_comments": {
+            "type": "boolean"
+          },
+          "clear_context": {
+            "type": "boolean"
+          },
+          "clear_default_references": {
+            "type": "boolean"
+          },
+          "clear_equates": {
+            "type": "boolean"
+          },
+          "clear_functions": {
+            "type": "boolean"
+          },
+          "clear_import_references": {
+            "type": "boolean"
+          },
+          "clear_properties": {
+            "type": "boolean"
+          },
+          "clear_registers": {
+            "type": "boolean"
+          },
+          "clear_symbols": {
+            "type": "boolean"
+          },
+          "clear_user_references": {
+            "type": "boolean"
+          },
+          "end": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "length": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "session_id",
+          "start"
+        ],
+        "type": "object"
+      },
+      "name": "listing.clear"
+    },
+    {
+      "description": "Return the nearest code unit that follows a given address.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "address"
+        ],
+        "type": "object"
+      },
+      "name": "listing.code_unit.after"
+    },
+    {
+      "description": "Return the code unit that starts exactly at a given address.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "address"
+        ],
+        "type": "object"
+      },
+      "name": "listing.code_unit.at"
+    },
+    {
+      "description": "Return the nearest code unit that precedes a given address.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "address"
+        ],
+        "type": "object"
+      },
+      "name": "listing.code_unit.before"
+    },
+    {
+      "description": "Return the code unit that contains a given address.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "address"
+        ],
+        "type": "object"
+      },
+      "name": "listing.code_unit.containing"
+    },
+    {
+      "description": "List code units in a range with pagination and direction controls.",
+      "inputSchema": {
+        "properties": {
+          "end": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "forward": {
+            "type": "boolean"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "offset": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "listing.code_units.list"
+    },
+    {
+      "description": "Return the defined data item at a specific address.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "address"
+        ],
+        "type": "object"
+      },
+      "name": "listing.data.at"
+    },
+    {
+      "description": "Clear one or more data definitions starting at an address.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "length": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "address"
+        ],
+        "type": "object"
+      },
+      "name": "listing.data.clear"
+    },
+    {
+      "description": "Create a data definition of a chosen type at an address.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "clear_existing": {
+            "type": "boolean"
+          },
+          "data_type": {
+            "type": "string"
+          },
+          "length": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "address",
+          "data_type"
+        ],
+        "type": "object"
+      },
+      "name": "listing.data.create"
+    },
+    {
+      "description": "List defined data items in the program with range and pagination controls.",
+      "inputSchema": {
+        "properties": {
+          "limit": {
+            "type": "integer"
+          },
+          "offset": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "listing.data.list"
+    },
+    {
+      "description": "Disassemble all instructions that belong to a function body.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "address"
+        ],
+        "type": "object"
+      },
+      "name": "listing.disassemble.function"
+    },
+    {
+      "description": "Disassemble instructions across a selected address range.",
+      "inputSchema": {
+        "properties": {
+          "length": {
+            "type": "integer"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "session_id",
+          "start",
+          "length"
+        ],
+        "type": "object"
+      },
+      "name": "listing.disassemble.range"
+    },
+    {
+      "description": "Start disassembly from a seed address and follow discovered flows.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "clear_existing": {
+            "type": "boolean"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "address"
+        ],
+        "type": "object"
+      },
+      "name": "listing.disassemble.seed"
+    },
+    {
+      "description": "Create a memory block with permissions, initialization, and an optional comment.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "comment": {
+            "type": "string"
+          },
+          "execute": {
+            "type": "boolean"
+          },
+          "fill": {
+            "type": "integer"
+          },
+          "initialized": {
+            "type": "boolean"
+          },
+          "length": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "read": {
+            "type": "boolean"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "write": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "session_id",
+          "name",
+          "address",
+          "length"
+        ],
+        "type": "object"
+      },
+      "name": "memory.block.create"
+    },
+    {
+      "description": "Remove an existing memory block from the program.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "memory.block.remove"
+    },
+    {
+      "description": "List memory blocks together with addresses, permissions, and sizes.",
+      "inputSchema": {
+        "properties": {
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "memory.blocks.list"
+    },
+    {
+      "description": "Read raw bytes directly from program memory.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "length": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "address",
+          "length"
+        ],
+        "type": "object"
+      },
+      "name": "memory.read"
+    },
+    {
+      "description": "Write raw bytes directly into program memory.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "data_base64": {
+            "type": "string"
+          },
+          "data_hex": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "address"
+        ],
+        "type": "object"
+      },
+      "name": "memory.write"
+    },
+    {
+      "description": "Read metadata entries stored by this server, optionally filtered by key or prefix.",
+      "inputSchema": {
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "offset": {
+            "type": "integer"
+          },
+          "prefix": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "metadata.query"
+    },
+    {
+      "description": "Store a JSON-serializable metadata value under a program-scoped key.",
+      "inputSchema": {
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "value": {}
+        },
+        "required": [
+          "session_id",
+          "key",
+          "value"
+        ],
+        "type": "object"
+      },
+      "name": "metadata.store"
+    },
+    {
+      "description": "Create a namespace under an optional parent namespace.",
+      "inputSchema": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "parent": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "name"
+        ],
+        "type": "object"
+      },
+      "name": "namespace.create"
+    },
+    {
+      "description": "Add a new parameter to a function with a chosen type and storage.",
+      "inputSchema": {
+        "properties": {
+          "data_type": {
+            "type": "string"
+          },
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "ordinal": {
+            "type": "integer"
+          },
+          "register": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "stack_offset": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start",
+          "name",
+          "data_type"
+        ],
+        "type": "object"
+      },
+      "name": "parameter.add"
+    },
+    {
+      "description": "Reorder a parameter to a new ordinal within the signature.",
+      "inputSchema": {
+        "properties": {
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "new_ordinal": {
+            "type": "integer"
+          },
+          "ordinal": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start",
+          "ordinal",
+          "new_ordinal"
+        ],
+        "type": "object"
+      },
+      "name": "parameter.move"
+    },
+    {
+      "description": "Remove a parameter from a function by ordinal or name.",
+      "inputSchema": {
+        "properties": {
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "ordinal": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start"
+        ],
+        "type": "object"
+      },
+      "name": "parameter.remove"
+    },
+    {
+      "description": "Replace an existing parameter definition by ordinal or name.",
+      "inputSchema": {
+        "properties": {
+          "data_type": {
+            "type": "string"
+          },
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "new_name": {
+            "type": "string"
+          },
+          "ordinal": {
+            "type": "integer"
+          },
+          "register": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "stack_offset": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start"
+        ],
+        "type": "object"
+      },
+      "name": "parameter.replace"
+    },
+    {
+      "description": "Assemble instruction text at an address and write the resulting bytes.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "assembly": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "address",
+          "assembly"
+        ],
+        "type": "object"
+      },
+      "name": "patch.assemble"
+    },
+    {
+      "description": "Invert a conditional branch instruction in place.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "address"
+        ],
+        "type": "object"
+      },
+      "name": "patch.branch_invert"
+    },
+    {
+      "description": "Replace instructions in a range with NOP bytes.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "count": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "address"
+        ],
+        "type": "object"
+      },
+      "name": "patch.nop"
+    },
+    {
+      "description": "Return per-instruction p-code for the basic block containing an address.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "address"
+        ],
+        "type": "object"
+      },
+      "name": "pcode.block"
+    },
+    {
+      "description": "Return per-instruction p-code for a function.",
+      "inputSchema": {
+        "properties": {
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start"
+        ],
+        "type": "object"
+      },
+      "name": "pcode.function"
+    },
+    {
+      "description": "Return the p-code ops generated by the instruction at an address.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "address"
+        ],
+        "type": "object"
+      },
+      "name": "pcode.op.at"
+    },
+    {
+      "description": "Find p-code reads and writes that match a selected varnode.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "space": {
+            "type": "string"
+          },
+          "timeout_secs": {
+            "type": "integer"
+          },
+          "varnode": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start"
+        ],
+        "type": "object"
+      },
+      "name": "pcode.varnode_uses"
+    },
+    {
+      "description": "Close an open program session and release its associated resources.",
+      "inputSchema": {
+        "properties": {
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "program.close"
+    },
+    {
+      "description": "Export the program to disk as either the original-file format or raw bytes.",
+      "inputSchema": {
+        "properties": {
+          "format": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "path"
+        ],
+        "type": "object"
+      },
+      "name": "program.export_binary"
+    },
+    {
+      "description": "Change the program image base. The rebase is always applied to the open program in memory; commit controls whether the change is recorded in the undo stack.",
+      "inputSchema": {
+        "properties": {
+          "commit": {
+            "type": "boolean"
+          },
+          "image_base": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "image_base"
+        ],
+        "type": "object"
+      },
+      "name": "program.image_base.set"
+    },
+    {
+      "description": "List all program sessions currently held open by the server.",
+      "inputSchema": {
+        "properties": {},
+        "type": "object"
+      },
+      "name": "program.list_open"
+    },
+    {
+      "description": "Return whether a session is currently read-only or read-write.",
+      "inputSchema": {
+        "properties": {
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "program.mode.get"
+    },
+    {
+      "description": "Switch a session between read-only and read-write mode.",
+      "inputSchema": {
+        "properties": {
+          "deterministic": {
+            "type": "boolean"
+          },
+          "read_only": {
+            "type": "boolean"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "program.mode.set"
+    },
+    {
+      "description": "Open a binary file for analysis and return a new session.",
+      "inputSchema": {
+        "properties": {
+          "compiler": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string"
+          },
+          "loader": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "program_name": {
+            "type": "string"
+          },
+          "project_location": {
+            "type": "string"
+          },
+          "project_name": {
+            "type": "string"
+          },
+          "read_only": {
+            "type": "boolean"
+          },
+          "update_analysis": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "type": "object"
+      },
+      "name": "program.open"
+    },
+    {
+      "description": "Open a binary from base64-encoded bytes and return a new session.",
+      "inputSchema": {
+        "properties": {
+          "compiler": {
+            "type": "string"
+          },
+          "data_base64": {
+            "type": "string"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string"
+          },
+          "loader": {
+            "type": "string"
+          },
+          "program_name": {
+            "type": "string"
+          },
+          "project_location": {
+            "type": "string"
+          },
+          "project_name": {
+            "type": "string"
+          },
+          "read_only": {
+            "type": "boolean"
+          },
+          "update_analysis": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "data_base64"
+        ],
+        "type": "object"
+      },
+      "name": "program.open_bytes"
+    },
+    {
+      "description": "Return a compact program report with counts plus sample functions, strings, imports, and memory blocks.",
+      "inputSchema": {
+        "properties": {
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "program.report"
+    },
+    {
+      "description": "Save the current program state back into the project.",
+      "inputSchema": {
+        "properties": {
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "program.save"
+    },
+    {
+      "description": "Save the current program under a new project path or name.",
+      "inputSchema": {
+        "properties": {
+          "folder_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "program_name": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "program_name"
+        ],
+        "type": "object"
+      },
+      "name": "program.save_as"
+    },
+    {
+      "description": "Return core program metadata such as architecture, memory layout, and entry point.",
+      "inputSchema": {
+        "properties": {
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "program.summary"
+    },
+    {
+      "description": "Export the current Ghidra project artifacts to a destination directory.",
+      "inputSchema": {
+        "properties": {
+          "destination": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "destination"
+        ],
+        "type": "object"
+      },
+      "name": "project.export"
+    },
+    {
+      "description": "Return metadata and state flags for a specific project file.",
+      "inputSchema": {
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "path"
+        ],
+        "type": "object"
+      },
+      "name": "project.file.info"
+    },
+    {
+      "description": "List project files with folder, content-type, query, and pagination filters.",
+      "inputSchema": {
+        "properties": {
+          "content_type": {
+            "type": "string"
+          },
+          "folder_path": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "offset": {
+            "type": "integer"
+          },
+          "query": {
+            "type": "string"
+          },
+          "recursive": {
+            "type": "boolean"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "project.files.list"
+    },
+    {
+      "description": "List project folders, optionally walking the tree recursively.",
+      "inputSchema": {
+        "properties": {
+          "folder_path": {
+            "type": "string"
+          },
+          "recursive": {
+            "type": "boolean"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "project.folders.list"
+    },
+    {
+      "description": "Open a program already stored in the current project and return a new session.",
+      "inputSchema": {
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "read_only": {
+            "type": "boolean"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "update_analysis": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "session_id",
+          "path"
+        ],
+        "type": "object"
+      },
+      "name": "project.program.open"
+    },
+    {
+      "description": "Open a program from a named existing Ghidra project and return a new session.",
+      "inputSchema": {
+        "properties": {
+          "folder_path": {
+            "type": "string"
+          },
+          "program_name": {
+            "type": "string"
+          },
+          "program_path": {
+            "type": "string"
+          },
+          "project_location": {
+            "type": "string"
+          },
+          "project_name": {
+            "type": "string"
+          },
+          "read_only": {
+            "type": "boolean"
+          },
+          "update_analysis": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "project_location",
+          "project_name"
+        ],
+        "type": "object"
+      },
+      "name": "project.program.open_existing"
+    },
+    {
+      "description": "Search program files in the project by name or path.",
+      "inputSchema": {
+        "properties": {
+          "content_type": {
+            "type": "string"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "offset": {
+            "type": "integer"
+          },
+          "query": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "project.search.programs"
+    },
+    {
+      "description": "Remove the symbol association attached to a specific reference.",
+      "inputSchema": {
+        "properties": {
+          "from_address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "operand_index": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "to_address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "session_id",
+          "from_address",
+          "to_address"
+        ],
+        "type": "object"
+      },
+      "name": "reference.association.remove"
+    },
+    {
+      "description": "Associate a specific reference with a symbol.",
+      "inputSchema": {
+        "properties": {
+          "from_address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "operand_index": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "symbol_address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "symbol_name": {
+            "type": "string"
+          },
+          "to_address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "session_id",
+          "from_address",
+          "to_address",
+          "symbol_address"
+        ],
+        "type": "object"
+      },
+      "name": "reference.association.set"
+    },
+    {
+      "description": "Remove references originating from one address or an address range.",
+      "inputSchema": {
+        "properties": {
+          "end_address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "from_address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "from_address"
+        ],
+        "type": "object"
+      },
+      "name": "reference.clear_from"
+    },
+    {
+      "description": "Remove all references that target a specific address.",
+      "inputSchema": {
+        "properties": {
+          "session_id": {
+            "type": "string"
+          },
+          "to_address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "session_id",
+          "to_address"
+        ],
+        "type": "object"
+      },
+      "name": "reference.clear_to"
+    },
+    {
+      "description": "Create a reference from an address to an external location.",
+      "inputSchema": {
+        "properties": {
+          "external_address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "from_address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "label": {
+            "type": "string"
+          },
+          "library_name": {
+            "type": "string"
+          },
+          "operand_index": {
+            "type": "integer"
+          },
+          "reference_type": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "source_type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "from_address",
+          "library_name"
+        ],
+        "type": "object"
+      },
+      "name": "reference.create.external"
+    },
+    {
+      "description": "Create a memory reference between two program addresses.",
+      "inputSchema": {
+        "properties": {
+          "from_address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "operand_index": {
+            "type": "integer"
+          },
+          "reference_type": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "source_type": {
+            "type": "string"
+          },
+          "to_address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "session_id",
+          "from_address",
+          "to_address"
+        ],
+        "type": "object"
+      },
+      "name": "reference.create.memory"
+    },
+    {
+      "description": "Create a reference from an address to a register.",
+      "inputSchema": {
+        "properties": {
+          "from_address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "operand_index": {
+            "type": "integer"
+          },
+          "reference_type": {
+            "type": "string"
+          },
+          "register": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "source_type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "from_address",
+          "register"
+        ],
+        "type": "object"
+      },
+      "name": "reference.create.register"
+    },
+    {
+      "description": "Create a reference from an address to a stack location.",
+      "inputSchema": {
+        "properties": {
+          "from_address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "operand_index": {
+            "type": "integer"
+          },
+          "reference_type": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "source_type": {
+            "type": "string"
+          },
+          "stack_offset": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "session_id",
+          "from_address",
+          "stack_offset"
+        ],
+        "type": "object"
+      },
+      "name": "reference.create.stack"
+    },
+    {
+      "description": "Delete a specific reference selected by source, destination, and operand.",
+      "inputSchema": {
+        "properties": {
+          "from_address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "operand_index": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "to_address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "session_id",
+          "from_address"
+        ],
+        "type": "object"
+      },
+      "name": "reference.delete"
+    },
+    {
+      "description": "List cross-references that originate from an address.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "end": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "reference.from"
+    },
+    {
+      "description": "Mark a specific reference as the primary one for its operand.",
+      "inputSchema": {
+        "properties": {
+          "from_address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "operand_index": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "to_address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "session_id",
+          "from_address",
+          "to_address"
+        ],
+        "type": "object"
+      },
+      "name": "reference.primary.set"
+    },
+    {
+      "description": "List cross-references that target an address.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "end": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "reference.to"
+    },
+    {
+      "description": "Add a relocation entry at an address with type, status, values, and symbol metadata.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "byte_length": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "symbol_name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "integer"
+          },
+          "values": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "session_id",
+          "address"
+        ],
+        "type": "object"
+      },
+      "name": "relocation.add"
+    },
+    {
+      "description": "List relocation entries, optionally limited to an address range.",
+      "inputSchema": {
+        "properties": {
+          "end": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "relocation.list"
+    },
+    {
+      "description": "Search program memory for an exact byte pattern.",
+      "inputSchema": {
+        "properties": {
+          "end": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "pattern_base64": {
+            "type": "string"
+          },
+          "pattern_hex": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "search.bytes"
+    },
+    {
+      "description": "Search instructions for scalar constant operands that match a value.",
+      "inputSchema": {
+        "properties": {
+          "end": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "value": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "session_id",
+          "value"
+        ],
+        "type": "object"
+      },
+      "name": "search.constants"
+    },
+    {
+      "description": "List defined strings discovered in the program.",
+      "inputSchema": {
+        "properties": {
+          "limit": {
+            "type": "integer"
+          },
+          "offset": {
+            "type": "integer"
+          },
+          "query": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "search.defined_strings"
+    },
+    {
+      "description": "Search instructions by mnemonic or rendered instruction text.",
+      "inputSchema": {
+        "properties": {
+          "case_sensitive": {
+            "type": "boolean"
+          },
+          "end": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "query": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "session_id",
+          "query"
+        ],
+        "type": "object"
+      },
+      "name": "search.instructions"
+    },
+    {
+      "description": "Search p-code operations by mnemonic or rendered op text.",
+      "inputSchema": {
+        "properties": {
+          "case_sensitive": {
+            "type": "boolean"
+          },
+          "end": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "query": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "session_id",
+          "query"
+        ],
+        "type": "object"
+      },
+      "name": "search.pcode"
+    },
+    {
+      "description": "Resolve a symbol name or expression into an address.",
+      "inputSchema": {
+        "properties": {
+          "query": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "query"
+        ],
+        "type": "object"
+      },
+      "name": "search.resolve"
+    },
+    {
+      "description": "Search for text across defined strings and raw memory matches.",
+      "inputSchema": {
+        "properties": {
+          "case_sensitive": {
+            "type": "boolean"
+          },
+          "defined_strings_only": {
+            "type": "boolean"
+          },
+          "encoding": {
+            "type": "string"
+          },
+          "end": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "text"
+        ],
+        "type": "object"
+      },
+      "name": "search.text"
+    },
+    {
+      "description": "Register a source file record with the program's source file manager.",
+      "inputSchema": {
+        "properties": {
+          "id_type": {
+            "type": "string"
+          },
+          "identifier_hex": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "path"
+        ],
+        "type": "object"
+      },
+      "name": "source.file.add"
+    },
+    {
+      "description": "List all source files currently registered with the program.",
+      "inputSchema": {
+        "properties": {
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "source.file.list"
+    },
+    {
+      "description": "Remove a source file record by path.",
+      "inputSchema": {
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "path"
+        ],
+        "type": "object"
+      },
+      "name": "source.file.remove"
+    },
+    {
+      "description": "Add a source mapping entry from a source line to an address range.",
+      "inputSchema": {
+        "properties": {
+          "base_address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "length": {
+            "type": "integer"
+          },
+          "line_number": {
+            "type": "integer"
+          },
+          "path": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "path",
+          "line_number",
+          "base_address",
+          "length"
+        ],
+        "type": "object"
+      },
+      "name": "source.map.add"
+    },
+    {
+      "description": "List source mapping entries by address, source file, or line filters.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "max_line": {
+            "type": "integer"
+          },
+          "min_line": {
+            "type": "integer"
+          },
+          "path": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "source.map.list"
+    },
+    {
+      "description": "Remove a specific source mapping entry by file, line, and base address.",
+      "inputSchema": {
+        "properties": {
+          "base_address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "line_number": {
+            "type": "integer"
+          },
+          "path": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "path",
+          "line_number",
+          "base_address"
+        ],
+        "type": "object"
+      },
+      "name": "source.map.remove"
+    },
+    {
+      "description": "Clear a stack-frame variable at a specific stack offset.",
+      "inputSchema": {
+        "properties": {
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "stack_offset": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start",
+          "stack_offset"
+        ],
+        "type": "object"
+      },
+      "name": "stackframe.variable.clear"
+    },
+    {
+      "description": "Create a stack-frame variable at a specific stack offset.",
+      "inputSchema": {
+        "properties": {
+          "data_type": {
+            "type": "string"
+          },
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "stack_offset": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start",
+          "name",
+          "stack_offset",
+          "data_type"
+        ],
+        "type": "object"
+      },
+      "name": "stackframe.variable.create"
+    },
+    {
+      "description": "List stack-frame variables for a function.",
+      "inputSchema": {
+        "properties": {
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start"
+        ],
+        "type": "object"
+      },
+      "name": "stackframe.variables"
+    },
+    {
+      "description": "Look up a symbol by name and return its details.",
+      "inputSchema": {
+        "properties": {
+          "exact": {
+            "type": "boolean"
+          },
+          "include_dynamic": {
+            "type": "boolean"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "name"
+        ],
+        "type": "object"
+      },
+      "name": "symbol.by_name"
+    },
+    {
+      "description": "Create a new symbol or label at an address.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "make_primary": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "address",
+          "name"
+        ],
+        "type": "object"
+      },
+      "name": "symbol.create"
+    },
+    {
+      "description": "Delete a symbol at an address, optionally by name.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "address"
+        ],
+        "type": "object"
+      },
+      "name": "symbol.delete"
+    },
+    {
+      "description": "List symbols with filtering and pagination support.",
+      "inputSchema": {
+        "properties": {
+          "include_dynamic": {
+            "type": "boolean"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "offset": {
+            "type": "integer"
+          },
+          "query": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "symbol.list"
+    },
+    {
+      "description": "Move a symbol into a different namespace.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "namespace": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "address",
+          "namespace"
+        ],
+        "type": "object"
+      },
+      "name": "symbol.namespace.move"
+    },
+    {
+      "description": "Mark a selected symbol as the primary symbol at its address.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "address"
+        ],
+        "type": "object"
+      },
+      "name": "symbol.primary.set"
+    },
+    {
+      "description": "Rename an existing symbol.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "new_name": {
+            "type": "string"
+          },
+          "old_name": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "address",
+          "new_name"
+        ],
+        "type": "object"
+      },
+      "name": "symbol.rename"
+    },
+    {
+      "description": "Create or reuse a function tag and attach it to a function.",
+      "inputSchema": {
+        "properties": {
+          "comment": {
+            "type": "string"
+          },
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start",
+          "name"
+        ],
+        "type": "object"
+      },
+      "name": "tag.add"
+    },
+    {
+      "description": "List tags for one function or across the whole program.",
+      "inputSchema": {
+        "properties": {
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "tag.list"
+    },
+    {
+      "description": "Remove a function tag from a function.",
+      "inputSchema": {
+        "properties": {
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start",
+          "name"
+        ],
+        "type": "object"
+      },
+      "name": "tag.remove"
+    },
+    {
+      "description": "Summarize function tags and the number of functions using each one.",
+      "inputSchema": {
+        "properties": {
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "tag.stats"
+    },
+    {
+      "description": "Start auto-analysis as a tracked background task and return a task ID.",
+      "inputSchema": {
+        "properties": {
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "task.analysis_update"
+    },
+    {
+      "description": "Request cancellation for a running or queued asynchronous task.",
+      "inputSchema": {
+        "properties": {
+          "task_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_id"
+        ],
+        "type": "object"
+      },
+      "name": "task.cancel"
+    },
+    {
+      "description": "Return the terminal result or error payload for a completed task.",
+      "inputSchema": {
+        "properties": {
+          "task_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_id"
+        ],
+        "type": "object"
+      },
+      "name": "task.result"
+    },
+    {
+      "description": "Return status, timing, and cancellation details for an asynchronous task.",
+      "inputSchema": {
+        "properties": {
+          "task_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_id"
+        ],
+        "type": "object"
+      },
+      "name": "task.status"
+    },
+    {
+      "description": "Begin an explicit undo transaction for grouped changes.",
+      "inputSchema": {
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "transaction.begin"
+    },
+    {
+      "description": "Commit the active transaction so its changes become undoable.",
+      "inputSchema": {
+        "properties": {
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "transaction.commit"
+    },
+    {
+      "description": "Reapply the most recently undone change.",
+      "inputSchema": {
+        "properties": {
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "transaction.redo"
+    },
+    {
+      "description": "Roll back the active transaction without committing it.",
+      "inputSchema": {
+        "properties": {
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "transaction.revert"
+    },
+    {
+      "description": "Return undo, redo, and active-transaction status for the session.",
+      "inputSchema": {
+        "properties": {
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "transaction.status"
+    },
+    {
+      "description": "Undo the most recently committed change.",
+      "inputSchema": {
+        "properties": {
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "transaction.undo"
+    },
+    {
+      "description": "Apply a data type at an address in the listing.",
+      "inputSchema": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "clear_existing": {
+            "type": "boolean"
+          },
+          "data_type": {
+            "type": "string"
+          },
+          "length": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "address",
+          "data_type"
+        ],
+        "type": "object"
+      },
+      "name": "type.apply_at"
+    },
+    {
+      "description": "List the current program archive plus attached source archives.",
+      "inputSchema": {
+        "properties": {
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "type.archives.list"
+    },
+    {
+      "description": "Create a new data type category path.",
+      "inputSchema": {
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "path"
+        ],
+        "type": "object"
+      },
+      "name": "type.category.create"
+    },
+    {
+      "description": "List data type categories under a path, optionally recursively.",
+      "inputSchema": {
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "recursive": {
+            "type": "boolean"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "type.category.list"
+    },
+    {
+      "description": "Define a new data type from a C declaration.",
+      "inputSchema": {
+        "properties": {
+          "category": {
+            "type": "string"
+          },
+          "declaration": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "declaration"
+        ],
+        "type": "object"
+      },
+      "name": "type.define_c"
+    },
+    {
+      "description": "Delete a data type by name or full path.",
+      "inputSchema": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "type.delete"
+    },
+    {
+      "description": "Return details for a data type by name or full path.",
+      "inputSchema": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "type.get"
+    },
+    {
+      "description": "Look up a data type by internal ID, universal ID, or source archive ID.",
+      "inputSchema": {
+        "properties": {
+          "data_type_id": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "source_archive_id": {
+            "type": "integer"
+          },
+          "universal_id": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "type.get_by_id"
+    },
+    {
+      "description": "List data types with filtering and pagination support.",
+      "inputSchema": {
+        "properties": {
+          "limit": {
+            "type": "integer"
+          },
+          "offset": {
+            "type": "integer"
+          },
+          "query": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "type.list"
+    },
+    {
+      "description": "Parse a C declaration and return the resulting type without necessarily committing it.",
+      "inputSchema": {
+        "properties": {
+          "category": {
+            "type": "string"
+          },
+          "declaration": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "declaration"
+        ],
+        "type": "object"
+      },
+      "name": "type.parse_c"
+    },
+    {
+      "description": "Rename an existing data type.",
+      "inputSchema": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "new_name": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "new_name"
+        ],
+        "type": "object"
+      },
+      "name": "type.rename"
+    },
+    {
+      "description": "List source archives referenced by the current data type manager.",
+      "inputSchema": {
+        "properties": {
+          "session_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "type.source_archives.list"
+    },
+    {
+      "description": "Set or clear the comment attached to a local variable or parameter.",
+      "inputSchema": {
+        "properties": {
+          "comment": {
+            "type": "string"
+          },
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "ordinal": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "storage": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start",
+          "name",
+          "comment"
+        ],
+        "type": "object"
+      },
+      "name": "variable.comment.set"
+    },
+    {
+      "description": "Create a local variable with explicit type, storage, and optional comment.",
+      "inputSchema": {
+        "properties": {
+          "comment": {
+            "type": "string"
+          },
+          "data_type": {
+            "type": "string"
+          },
+          "first_use_offset": {
+            "type": "integer"
+          },
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "register": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "stack_offset": {
+            "type": "integer"
+          },
+          "storage_address": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start",
+          "name",
+          "data_type"
+        ],
+        "type": "object"
+      },
+      "name": "variable.local.create"
+    },
+    {
+      "description": "Remove a local variable from a function.",
+      "inputSchema": {
+        "properties": {
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "storage": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start",
+          "name"
+        ],
+        "type": "object"
+      },
+      "name": "variable.local.remove"
+    },
+    {
+      "description": "Rename a local variable or parameter.",
+      "inputSchema": {
+        "properties": {
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "new_name": {
+            "type": "string"
+          },
+          "ordinal": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "storage": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start",
+          "name",
+          "new_name"
+        ],
+        "type": "object"
+      },
+      "name": "variable.rename"
+    },
+    {
+      "description": "Change the data type of a local variable or parameter.",
+      "inputSchema": {
+        "properties": {
+          "data_type": {
+            "type": "string"
+          },
+          "function_start": {
+            "oneOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "ordinal": {
+            "type": "integer"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "storage": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "function_start",
+          "name",
+          "data_type"
+        ],
+        "type": "object"
+      },
+      "name": "variable.retype"
+    }
+  ],
+  "total": 212
+}

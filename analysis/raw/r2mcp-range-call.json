@@ -1,0 +1,8 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "; 0x6cfa00\n; \"Range: bytes=%I64d-%I64d\\r\\n\"\n0x005af215      push str.Range:_bytes_I64d__I64d_r_n\n0x005af21a      lea eax, [ebp + 0x60]\n0x005af21d      push eax\n   ; fcn.0063f908\n   ; fcn.0063f908(0x60, 0x0, 0x0)\n0x005af21e      call fcn.0063f908\n0x005af223      add esp, 0x18\n0x005af226      jmp 0x5af596\n; CODE XREFS from method.ProxyConnection.virtual_32 @ 0x5af1dc(x), 0x5af1e6(x), 0x5af1f2(x)\n0x005af22b      cmp byte [esi + 0x3210], 0\n   ; unlikely\n0x005af232      je 0x5af24a\n; CODE XREFS from method.ProxyConnection.virtual_32 @ 0x5af2c7(x), 0x5af2da(x)\n; 0x6cf9d4\n; \"Range: bytes=0-\\r\\n\"\n0x005af234      push str.Range:_bytes0__r_n\n0x005af239      lea ecx, [ebp + 0x60]\n0x005af23c      push ecx\n   ; fcn.0063f908(0x60, 0x0, 0x60)\n0x005af23d      call fcn.0063f908\n0x005af242      add esp, 8\n0x005af245      jmp 0x5af596\n; CODE XREF from method.ProxyConnection.virtual_32 @ 0x5af232(x)\n0x005af24a      mov edi, dword [esi + 0x60]\n0x005af24d      mov edx, dword [esi + 0x64]\n0x005af250      test edx, edx\n   ; unlikely\n0x005af252      jg 0x5af37f\n   ; likely\n0x005af258      jl 0x5af262\n0x005af25a      test edi, edi\n"
+    }
+  ]
+}

@@ -13,7 +13,7 @@ The owner reports a licensed IDM copy and requests a personal MacBook port. Reve
 
 ## Tools and evidence
 
-Use GhidraMCP as the primary decompiler and Radare2 MCP for independent disassembly, imports, sections, references, and function checks. Discover actual exposed tools and local configuration before assuming endpoints or executable paths. This session currently exposes neither MCP toolset. CLI `/opt/homebrew/bin/rabin2` and `/opt/homebrew/bin/r2` are available; installer triage used rabin2.
+Use GhidraMCP as the primary decompiler and Radare2 MCP for independent disassembly, imports, sections, references, and function checks. Discover actual exposed tools and local configuration before assuming endpoints or executable paths. Direct stdio MCP clients now reach both real servers; scripts/mcp_client.py handles JSON-RPC. Ghidra uses the project-local .venv and Homebrew Ghidra 12.1.2; r2mcp uses the executable discovered in the local MCP configuration. CLI `/opt/homebrew/bin/rabin2` and `/opt/homebrew/bin/r2` are available; installer triage used rabin2.
 
 Follow the useful principles from `../open-igi/RE.md`: preserve provenance; do not invent addresses, prototypes, calling conventions, structures, or semantics. IGI functions and symbols do not describe IDM.
 
@@ -43,3 +43,7 @@ Follow the useful principles from `../open-igi/RE.md`: preserve provenance; do n
 ## Agent handoff prompt
 
 Continue this personal IDM macOS project. Read RE.md and recorded evidence first. Discover and use the owner's GhidraMCP and Radare2 MCP integrations. Extract and inventory the installer payload, then analyze actual application binaries with Ghidra and independently check findings with radare2. Document the download engine and UI behavior before implementing macOS equivalents. Maintain a complete parity matrix. Continue authorized work autonomously, preserve originals and private credentials, and report real blockers and uncertain findings. Never fabricate tool execution or call an incomplete port a 100% replica.
+
+## Implementation progress
+
+Application extracted, imported and analyzed using GhidraMCP; HTTP range functions decompiled and independently checked with Radare2 MCP. See docs/findings/http-engine.md. CrossOver reference application runs locally. Native macOS implementation and deterministic tests are in progress.

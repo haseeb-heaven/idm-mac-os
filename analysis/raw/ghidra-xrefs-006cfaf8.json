@@ -1,0 +1,24 @@
+{
+  "content": [
+    {
+      "text": "ok session_id=97960c9e5f954a64bd09abd24626e783 count=1",
+      "type": "text"
+    }
+  ],
+  "isError": false,
+  "structuredContent": {
+    "address": "006cfaf8",
+    "count": 1,
+    "items": [
+      {
+        "external": false,
+        "from": "0058eba0",
+        "operand_index": 0,
+        "primary": true,
+        "reference_type": "DATA",
+        "to": "006cfaf8"
+      }
+    ],
+    "session_id": "97960c9e5f954a64bd09abd24626e783"
+  }
+}

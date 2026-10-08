@@ -1,0 +1,32 @@
+{
+  "content": [
+    {
+      "text": "ok session_id=97960c9e5f954a64bd09abd24626e783 count=2",
+      "type": "text"
+    }
+  ],
+  "isError": false,
+  "structuredContent": {
+    "address": "006cf024",
+    "count": 2,
+    "items": [
+      {
+        "external": false,
+        "from": "00581fe7",
+        "operand_index": 0,
+        "primary": true,
+        "reference_type": "DATA",
+        "to": "006cf024"
+      },
+      {
+        "external": false,
+        "from": "0058ea14",
+        "operand_index": 0,
+        "primary": true,
+        "reference_type": "DATA",
+        "to": "006cf024"
+      }
+    ],
+    "session_id": "97960c9e5f954a64bd09abd24626e783"
+  }
+}
