@@ -22,6 +22,7 @@ cat > "$app/Contents/Info.plist" <<'PLIST'
 </dict></plist>
 PLIST
 xattr -cr "$app"
+xattr -d com.apple.FinderInfo "$app" 2>/dev/null || true
 codesign --force --sign - "$app"
 codesign --verify --strict "$app"
 print "Built $app"

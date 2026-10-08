@@ -12,6 +12,8 @@ import IDMCore
     private var categoryFilter = "All Downloads"
     private var storageError: String?
     private let status = NSTextField(labelWithString: "Ready")
+    private let emptyTitle = NSTextField(labelWithString:"No downloads yet")
+    private var emptyGroup:NSStackView?
     private var timer: Timer?
     private var runningQueue = true
     private var detailsController: DownloadDetailsController?
@@ -34,7 +36,7 @@ import IDMCore
     }
     func smokeCheck(output:URL) throws -> [String:Any] {
         guard let window, window.isVisible, let content = window.contentView else { throw DownloadError.storage("Main window is not visible") }
-        content.layoutSubtreeIfNeeded()
+        content.layoutSubtreeIfNeeded();window.displayIfNeeded()
         guard table.tableColumns.count == 6, categories.numberOfRows >= 5, table.dataSource != nil, table.delegate != nil else { throw DownloadError.storage("Download controls are not configured") }
         let frameView = content.superview ?? content
         if let bitmap = frameView.bitmapImageRepForCachingDisplay(in:frameView.bounds) {
@@ -42,14 +44,18 @@ import IDMCore
             try bitmap.representation(using:.png,properties:[:])?.write(to:output.deletingPathExtension().appendingPathExtension("png"))
         }
         let defaultFrame = window.frame
-        window.setContentSize(NSSize(width:900,height:500));content.layoutSubtreeIfNeeded()
+        window.setContentSize(NSSize(width:900,height:500));content.layoutSubtreeIfNeeded();frameView.layoutSubtreeIfNeeded();window.displayIfNeeded()
         if let bitmap = frameView.bitmapImageRepForCachingDisplay(in:frameView.bounds) {
             frameView.cacheDisplay(in:frameView.bounds,to:bitmap)
             try bitmap.representation(using:.png,properties:[:])?.write(to:output.deletingLastPathComponent().appendingPathComponent("ui-minimum.png"))
         }
         guard table.enclosingScrollView?.bounds.width ?? 0 > 500, categories.bounds.width >= 150 else { throw DownloadError.storage("Content is clipped at minimum width") }
         window.setFrame(defaultFrame,display:true)
-        return ["windowNumber":window.windowNumber,"toolbarItems":window.toolbar?.items.count ?? 0,"minimumWidthChecked":900,"visible":window.isVisible,"columns":table.tableColumns.count,"categoryRows":categories.numberOfRows,"width":window.frame.width,"height":window.frame.height]
+        let scheduled = try DownloadJob(url:URL(string:"https://example.com/scheduled")!,destination:output.deletingLastPathComponent().appendingPathComponent("scheduled.bin"),scheduledAt:Date().addingTimeInterval(3600))
+        jobs.append(scheduled);prepareForTermination()
+        guard let saved = try store.load().first(where:{$0.id == scheduled.id}), saved.state == .queued, saved.scheduledAt == scheduled.scheduledAt else { throw DownloadError.storage("Quit changed scheduled job") }
+        jobs.removeAll(where:{$0.id == scheduled.id});try store.save(jobs)
+        return ["scheduledQuitCheck":true,"windowNumber":window.windowNumber,"toolbarItems":window.toolbar?.items.count ?? 0,"minimumWidthChecked":900,"visible":window.isVisible,"columns":table.tableColumns.count,"categoryRows":categories.numberOfRows,"width":window.frame.width,"height":window.frame.height]
     }
     required init?(coder: NSCoder) { fatalError("Not supported") }
     private var visible: [DownloadJob] {
@@ -118,27 +124,37 @@ import IDMCore
         window?.toolbar = toolbar;window?.toolbarStyle = .expanded
         let categoryColumn = NSTableColumn(identifier:NSUserInterfaceItemIdentifier("category"))
         categories.addTableColumn(categoryColumn); categories.outlineTableColumn = categoryColumn
-        categories.headerView = nil; categories.rowHeight = 28; categories.dataSource = self; categories.delegate = self
+        categories.focusRingType = .none; categories.headerView = nil; categories.rowHeight = 28; categories.dataSource = self; categories.delegate = self
         categories.reloadData(); categories.expandItem("All Downloads"); categories.selectRowIndexes(IndexSet(integer:0),byExtendingSelection:false)
         categories.setAccessibilityLabel("Download categories")
         let categoryScroll = NSScrollView(); categoryScroll.documentView = categories; categoryScroll.hasVerticalScroller = true
         let sidebar = NSStackView(views: [NSTextField(labelWithString: "Categories"), categoryScroll])
         sidebar.orientation = .vertical; sidebar.alignment = .leading; sidebar.spacing = 12
         categoryScroll.widthAnchor.constraint(equalTo:sidebar.widthAnchor).isActive = true
+        table.columnAutoresizingStyle = .uniformColumnAutoresizingStyle
         table.usesAlternatingRowBackgroundColors = true; table.allowsMultipleSelection = false
         table.dataSource = self; table.delegate = self; table.rowHeight = 28
         table.target = self; table.doubleAction = #selector(showProgress)
         for (id, title, width) in [("name","File Name",260.0), ("size","Size",95.0), ("status","Status",100.0), ("progress","Progress",95.0), ("speed","Transfer Rate",110.0), ("date","Date Added",140.0)] {
             let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier(id)); column.title = title; column.width = width
+            column.minWidth = ["name":180.0,"size":65.0,"status":80.0,"progress":65.0,"speed":95.0,"date":105.0][id] ?? 60
+            column.resizingMask = [.autoresizingMask,.userResizingMask]
             table.addTableColumn(column)
         }
         let scroll = NSScrollView(); scroll.documentView = table; scroll.hasVerticalScroller = true; scroll.hasHorizontalScroller = true
         scroll.borderType = .bezelBorder
+        emptyTitle.font = .systemFont(ofSize:16,weight:.semibold)
+        let hint = NSTextField(labelWithString:"Choose Add URL to start a download.");hint.textColor = .secondaryLabelColor
+        let add = NSButton(title:"Add URL…",target:self,action:#selector(addURL));add.bezelStyle = .rounded
+        let empty = NSStackView(views:[emptyTitle,hint,add]);empty.orientation = .vertical;empty.spacing = 12;empty.translatesAutoresizingMaskIntoConstraints = false;content.addSubview(empty)
+        empty.isHidden = !visible.isEmpty;emptyGroup = empty
         let split = NSSplitView(); split.isVertical = true; split.dividerStyle = .thin; split.addArrangedSubview(sidebar); split.addArrangedSubview(scroll)
         let root = NSStackView(views: [split, status]); root.orientation = .vertical; root.alignment = .leading; root.spacing = 12
         root.translatesAutoresizingMaskIntoConstraints = false; content.addSubview(root)
         for view in [split, status] { view.translatesAutoresizingMaskIntoConstraints = false; view.widthAnchor.constraint(equalTo: root.widthAnchor).isActive = true }
         NSLayoutConstraint.activate([root.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 16),root.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -16),root.topAnchor.constraint(equalTo: content.topAnchor, constant: 12),root.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: -12),sidebar.widthAnchor.constraint(equalToConstant: 185)])
+        content.addSubview(empty,positioned:.above,relativeTo:root)
+        NSLayoutConstraint.activate([empty.centerXAnchor.constraint(equalTo:scroll.centerXAnchor),empty.centerYAnchor.constraint(equalTo:scroll.centerYAnchor)])
         table.setAccessibilityLabel("Downloads")
     }
     func outlineView(_ outlineView: NSOutlineView, numberOfChildrenOfItem item: Any?) -> Int {
@@ -175,7 +191,7 @@ import IDMCore
     @discardableResult private func persist() -> Bool {
         do { try store.save(jobs); lastPersist = Date(); storageError = nil; return true } catch { runningQueue = false; storageError = error.localizedDescription; status.stringValue = error.localizedDescription; return false }
     }
-    private func refresh() { table.reloadData(); window?.toolbar?.validateVisibleItems(); updateStatus(); if let id = detailsController?.jobID, let job = jobs.first(where:{$0.id == id}) { detailsController?.update(job,speed:progressTimes[id]?.2 ?? 0) } }
+    private func refresh() { emptyGroup?.isHidden = !visible.isEmpty;emptyTitle.stringValue = jobs.isEmpty ? "No downloads yet" : "No downloads in this category";table.reloadData(); window?.toolbar?.validateVisibleItems(); updateStatus(); if let id = detailsController?.jobID, let job = jobs.first(where:{$0.id == id}) { detailsController?.update(job,speed:progressTimes[id]?.2 ?? 0) } }
     func tableViewSelectionDidChange(_ notification:Notification) { window?.toolbar?.validateVisibleItems();updateStatus() }
     private func updateStatus() { if let job = selected, let error = job.error { status.stringValue = "Download failed: " + error;status.toolTip = error;return }; if let storageError { status.stringValue = storageError; return }; status.stringValue = "\(jobs.count) downloads · \(tasks.count) active · Queue \(runningQueue ? "running" : "stopped")" }
     @objc private func filterChanged() { refresh() }
@@ -191,7 +207,7 @@ import IDMCore
         guard a.runModal() == .alertFirstButtonReturn else { return }
         do {
             guard let address = URL(string: url.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)) else { throw DownloadError.invalidURL }
-            let panel = NSSavePanel(); panel.nameFieldStringValue = address.lastPathComponent.isEmpty ? "download" : address.lastPathComponent
+            let panel = NSSavePanel(); panel.nameFieldStringValue = DownloadFilename.from(address)
             panel.directoryURL = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first
             guard panel.runModal() == .OK, let destination = panel.url else { return }
             let job = try DownloadJob(url: address, destination: destination)
@@ -202,7 +218,7 @@ import IDMCore
     }
     @objc private func batchURLs() {
         let a = NSAlert(); a.messageText = "Batch URLs"; a.informativeText = "Enter one HTTP or HTTPS URL per line."; a.addButton(withTitle:"Add"); a.addButton(withTitle:"Cancel")
-        let text = NSTextView(frame:NSRect(x:0,y:0,width:450,height:180)); let scroll = NSScrollView(frame:text.frame); scroll.documentView = text; scroll.hasVerticalScroller = true; a.accessoryView = scroll
+        let text = NSTextView(frame:NSRect(x:0,y:0,width:450,height:180));text.isRichText = false; let scroll = NSScrollView(frame:text.frame); scroll.documentView = text; scroll.hasVerticalScroller = true; a.accessoryView = scroll
         guard a.runModal() == .alertFirstButtonReturn else { return }
         let panel = NSOpenPanel(); panel.canChooseFiles = false; panel.canChooseDirectories = true; panel.canCreateDirectories = true
         guard panel.runModal() == .OK, let directory = panel.url else { return }
@@ -213,7 +229,7 @@ import IDMCore
             var additions = [DownloadJob]()
             for line in lines where !line.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty {
                 guard let url = URL(string:line.trimmingCharacters(in:.whitespacesAndNewlines)) else { throw DownloadError.invalidURL }
-                let name = url.lastPathComponent.isEmpty ? "download" : url.lastPathComponent
+                let name = DownloadFilename.from(url)
                 var destination = directory.appendingPathComponent(name); var suffix = 1
                 while FileManager.default.fileExists(atPath:destination.path) || (jobs + additions).contains(where:{$0.destination == destination}) {
                     destination = directory.appendingPathComponent("\(suffix)-\(name)"); suffix += 1
@@ -233,6 +249,12 @@ import IDMCore
     private func pause(_ id:UUID) {
         tasks[id]?.cancel()
         if let i = jobs.firstIndex(where:{$0.id == id}), jobs[i].state == .queued || jobs[i].state == .downloading { jobs[i].state = .paused }
+        persist()
+    }
+    func prepareForTermination() {
+        runningQueue = false
+        for task in tasks.values { task.cancel() }
+        for index in jobs.indices where jobs[index].state == .downloading { jobs[index].state = .paused }
         persist()
     }
     @objc func stopAll() { runningQueue = false; for id in jobs.map(\.id) { pause(id) }; refresh() }
@@ -285,7 +307,7 @@ import IDMCore
     @objc private func schedule() {
         guard let job = selected, job.state != .completed, tasks[job.id] == nil else { return }
         let a = NSAlert(); a.messageText = "Schedule Download"; a.addButton(withTitle:"Schedule"); a.addButton(withTitle:"Cancel")
-        let picker = NSDatePicker(); picker.datePickerElements = [.yearMonthDay,.hourMinute]; picker.datePickerStyle = .textFieldAndStepper; picker.dateValue = Date().addingTimeInterval(60); a.accessoryView = picker
+        let picker = NSDatePicker(); picker.datePickerElements = [.yearMonthDay,.hourMinute]; picker.datePickerStyle = .textFieldAndStepper; picker.dateValue = Date().addingTimeInterval(60);picker.sizeToFit();a.accessoryView = picker
         guard a.runModal() == .alertFirstButtonReturn, let i = jobs.firstIndex(where:{$0.id == job.id}) else { return }
         jobs[i].scheduledAt = picker.dateValue; jobs[i].state = .queued; runningQueue = true; persist(); refresh()
     }
@@ -314,7 +336,7 @@ import IDMCore
     }
     private func reviewLinks(_ links:[URL]) {
         let a = NSAlert(); a.messageText = "Found \(links.count) file links"; a.informativeText = "Remove any URLs you do not want to download."; a.addButton(withTitle:"Add Downloads"); a.addButton(withTitle:"Cancel")
-        let text = NSTextView(frame:NSRect(x:0,y:0,width:520,height:250)); text.string = links.map(\.absoluteString).joined(separator:"\n"); let scroll = NSScrollView(frame:text.frame); scroll.documentView = text; scroll.hasVerticalScroller = true; a.accessoryView = scroll
+        let text = NSTextView(frame:NSRect(x:0,y:0,width:520,height:250));text.isRichText = false; text.string = links.map(\.absoluteString).joined(separator:"\n"); let scroll = NSScrollView(frame:text.frame); scroll.documentView = text; scroll.hasVerticalScroller = true; a.accessoryView = scroll
         guard a.runModal() == .alertFirstButtonReturn else { return }
         let panel = NSOpenPanel(); panel.canChooseFiles = false; panel.canChooseDirectories = true; panel.canCreateDirectories = true
         guard panel.runModal() == .OK, let directory = panel.url else { return }; addBatch(text.string.components(separatedBy:.newlines),directory:directory)

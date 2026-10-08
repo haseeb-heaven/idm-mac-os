@@ -34,6 +34,6 @@ import AppKit
     }
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        controller?.stopAll(); return .terminateNow
+        controller?.prepareForTermination(); return .terminateNow
     }
 }
