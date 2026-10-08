@@ -201,6 +201,10 @@ final class DownloadTests: @unchecked Sendable {
         try await DownloadEngine(workDirectory:dir.appendingPathComponent("work")).run(job:job,options:options)
         try XCTAssertGreaterThanOrEqual(start.duration(to:.now),.milliseconds(950))
     }
+    func testGrabberIgnoresInactiveBase() async throws {
+        let fixture = try Fixture()
+        try XCTAssertEqual(try await SiteGrabber.links(on:fixture.base.appendingPathComponent("commentbase")),[fixture.base.appendingPathComponent("assets/file.zip")])
+    }
     func testGrabberBaseURL() async throws {
         let fixture = try Fixture()
         try XCTAssertEqual(try await SiteGrabber.links(on:fixture.base.appendingPathComponent("basepage")),[fixture.base.appendingPathComponent("assets/file.zip")])
@@ -265,6 +269,7 @@ private func log(_ text:String) { FileHandle.standardOutput.write(Data((text + "
         log("RUN testCollisionPreservesExistingFile"); try await suite.testCollisionPreservesExistingFile(); passed += 1; log("PASS testCollisionPreservesExistingFile")
         log("RUN testCancelAndResume"); try await suite.testCancelAndResume(); passed += 1; log("PASS testCancelAndResume")
         log("RUN testSpeedLimit"); try await suite.testSpeedLimit(); passed += 1; log("PASS testSpeedLimit")
+        try await suite.testGrabberIgnoresInactiveBase();passed += 1;log("PASS testGrabberIgnoresInactiveBase")
         try await suite.testGrabberBaseURL();passed += 1;log("PASS testGrabberBaseURL")
         log("RUN testGrabberDeduplicatesFileLinks"); try await suite.testGrabberDeduplicatesFileLinks(); passed += 1; log("PASS testGrabberDeduplicatesFileLinks")
         log("RUN testSQLiteRoundTripAndCrashRecovery"); try suite.testSQLiteRoundTripAndCrashRecovery(); passed += 1; log("PASS testSQLiteRoundTripAndCrashRecovery")
