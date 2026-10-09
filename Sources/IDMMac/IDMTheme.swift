@@ -1,7 +1,12 @@
 import AppKit
+import IDMCore
 
 /// Light surfaces and colored controls inspired by the original IDM window.
 @MainActor enum IDMTheme {
+    static let sidebar = NSColor(srgbRed:0.956,green:0.96,blue:0.964,alpha:1)
+    static func stateColor(_ state:JobState) -> NSColor {
+        switch state { case .completed:green; case .failed:.systemRed; case .downloading:blue; case .paused:.secondaryLabelColor; case .queued:.secondaryLabelColor }
+    }
     static let blue = NSColor(srgbRed:0.12,green:0.43,blue:0.76,alpha:1)
     static let green = NSColor(srgbRed:0.16,green:0.57,blue:0.36,alpha:1)
     static let orange = NSColor(srgbRed:0.83,green:0.43,blue:0.14,alpha:1)

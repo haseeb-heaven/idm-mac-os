@@ -12,6 +12,11 @@ import CryptoKit
     private var tasks: [UUID: Task<Void, Never>] = [:]
     private var options = DownloadOptions()
     private let table = NSTableView()
+    private let search = NSSearchField()
+    private var selectedJobID:UUID?
+    private var refreshingTable = false
+    private let listTitle = NSTextField(labelWithString:"All Downloads")
+    private let listSummary = NSTextField(labelWithString:"")
     private let categories = NSOutlineView()
     private var categoryFilter = "All Downloads"
     private var storageError: String?
@@ -34,7 +39,7 @@ import CryptoKit
         jobs = try store.load()
         if storageDirectory == nil,let data = UserDefaults.standard.data(forKey: "downloadOptions"), let saved = try? JSONDecoder().decode(DownloadOptions.self, from: data) { options = saved }
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1100, height: 680), styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
-        window.appearance = NSAppearance(named:.aqua);window.backgroundColor = .windowBackgroundColor;window.title = "Internet Download Manager"; window.center(); window.minSize = NSSize(width: 900, height: 500)
+        window.appearance = NSAppearance(named:.aqua);window.backgroundColor = .windowBackgroundColor;window.title = "IDM Mac"; window.center(); window.minSize = NSSize(width: 900, height: 500)
         super.init(window: window)
         configureMenu(); configureContent()
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
@@ -144,7 +149,20 @@ import CryptoKit
            let cell = self.tableView(table,viewFor:column,row:0),let bar = cell.subviews.first as? NSProgressIndicator {
             guard !bar.isIndeterminate,bar.doubleValue == 100 else { throw DownloadError.storage("Completed progress bar is incorrect") }
         } else { throw DownloadError.storage("Progress cell missing") }
-        showProgress();detailsController?.close()
+        showProgress()
+        if let frame = detailsController?.window?.contentView?.superview {
+            frame.layoutSubtreeIfNeeded()
+            if let bitmap = frame.bitmapImageRepForCachingDisplay(in:frame.bounds) {
+                frame.cacheDisplay(in:frame.bounds,to:bitmap)
+                try bitmap.representation(using:.png,properties:[:])?.write(to:output.deletingLastPathComponent().appendingPathComponent("ui-details.png"))
+            }
+        }
+        detailsController?.close()
+        search.stringValue = complete.destination.lastPathComponent; searchChanged()
+        guard visible.count == 1 else { throw DownloadError.storage("Search did not match filename") }
+        search.stringValue = "no-matching-download-unique"; searchChanged()
+        guard visible.isEmpty, emptyGroup?.isHidden == false else { throw DownloadError.storage("Search empty state is missing") }
+        search.stringValue = ""; searchChanged()
         addBatch([base.appendingPathComponent("protected").absoluteString],directory:directory)
         guard let failedID = jobs.last?.id else { throw DownloadError.storage("UI failed job missing") }
         while tasks[failedID] != nil || jobs.last?.state == .queued {
@@ -153,28 +171,37 @@ import CryptoKit
         }
         table.selectRowIndexes(IndexSet(integer:jobs.count-1),byExtendingSelection:false);refresh()
         guard jobs.last?.state == .failed,!failureStrip.isHidden,failureRetry.isEnabled else { throw DownloadError.storage("UI error actions unavailable") }
+        search.stringValue = "protected"; searchChanged()
+        guard selected?.id == failedID,table.selectedRow == 0 else { throw DownloadError.storage("Search changed the selected download identity") }
+        search.stringValue = ""; searchChanged()
+        table.selectRowIndexes(IndexSet(integer:0),byExtendingSelection:false)
+        search.stringValue = "protected"; searchChanged()
+        guard selected == nil,table.selectedRow == -1 else { throw DownloadError.storage("Filtering selected an unrelated download") }
+        search.stringValue = ""; searchChanged()
+        table.selectRowIndexes(IndexSet(integer:jobs.count-1),byExtendingSelection:false)
         window?.contentView?.layoutSubtreeIfNeeded();window?.displayIfNeeded()
         if let frame = window?.contentView?.superview,let bitmap = frame.bitmapImageRepForCachingDisplay(in:frame.bounds) {
             frame.cacheDisplay(in:frame.bounds,to:bitmap)
             try bitmap.representation(using:.png,properties:[:])?.write(to:output.deletingPathExtension().appendingPathExtension("png"))
         }
-        return ["actualDownloadSHA256":true,"toolbarPauseResume":true,"completedDetails":true,"browserVerificationActions":true,"lightTheme":window?.effectiveAppearance.name.rawValue ?? "unknown"]
+        return ["actualDownloadSHA256":true,"toolbarPauseResume":true,"completedDetails":true,"searchFiltering":true,"searchPreservesSelection":true,"browserVerificationActions":true,"lightTheme":window?.effectiveAppearance.name.rawValue ?? "unknown"]
     }
     required init?(coder: NSCoder) { fatalError("Not supported") }
     private var visible: [DownloadJob] {
-        let filter = categoryFilter
+        let query = search.stringValue.trimmingCharacters(in:.whitespacesAndNewlines)
         return jobs.filter { job in
-            switch filter {
+            let matchesCategory:Bool = switch categoryFilter {
             case "All Downloads": true
             case "Unfinished": job.state != .completed
             case "Finished": job.state == .completed
             case "Main Queue", "Queues": job.state == .queued
             case "Grabber projects": false
-            default: job.category == filter
+            default: job.category == categoryFilter
             }
+            return matchesCategory && (query.isEmpty || job.destination.lastPathComponent.localizedCaseInsensitiveContains(query) || (job.url.host ?? "").localizedCaseInsensitiveContains(query) || job.state.rawValue.localizedCaseInsensitiveContains(query))
         }
     }
-    private var selected: DownloadJob? { let row = table.selectedRow; return visible.indices.contains(row) ? visible[row] : nil }
+    private var selected: DownloadJob? { visible.first(where:{$0.id == selectedJobID}) }
     private var toolbarActions: [(String,String,String,Selector)] {
         [("add","Add URL","plus.circle",#selector(addURL)),("resume","Resume","play.fill",#selector(resume)),
          ("stop","Stop","pause.fill",#selector(stop)),("stopAll","Stop All","pause.circle",#selector(stopAll)),
@@ -188,7 +215,14 @@ import CryptoKit
     func toolbar(_ toolbar:NSToolbar,itemForItemIdentifier identifier:NSToolbarItem.Identifier,willBeInsertedIntoToolbar:Bool) -> NSToolbarItem? {
         guard let (_,title,symbol,action) = toolbarActions.first(where:{$0.0 == identifier.rawValue}) else { return nil }
         let item = NSToolbarItem(itemIdentifier:identifier);item.label = title;item.paletteLabel = title;item.toolTip = title
-        item.image = IDMTheme.icon(symbol,color:IDMTheme.color(identifier.rawValue));item.target = self;item.action = action
+        item.image = NSImage(systemSymbolName:symbol,accessibilityDescription:title)?.withSymbolConfiguration(.init(pointSize:17,weight:.medium))
+        item.target = self;item.action = action
+        if identifier.rawValue == "add" {
+            let button = NSButton(title:"Add URL",image:NSImage(systemSymbolName:"plus",accessibilityDescription:"Add download")!,target:self,action:action)
+            button.imagePosition = .imageLeft; button.bezelStyle = .rounded; button.controlSize = .small
+            button.setAccessibilityLabel("Add download URL"); item.view = button
+        }
+        item.visibilityPriority = ["add","resume","stop","grabber"].contains(identifier.rawValue) ? .high : .low
         item.visibilityPriority = ["add","resume","stop","details"].contains(identifier.rawValue) ? .high : .standard
         return item
     }
@@ -223,60 +257,80 @@ import CryptoKit
     }
     private func configureContent() {
         guard let content = window?.contentView else { return }
-        let toolbar = NSToolbar(identifier:"IDMMac.MainToolbar");toolbar.delegate = self
-        toolbar.displayMode = .iconAndLabel;toolbar.sizeMode = .regular;toolbar.allowsUserCustomization = false
-        window?.toolbar = toolbar;window?.toolbarStyle = .expanded
-        let categoryColumn = NSTableColumn(identifier:NSUserInterfaceItemIdentifier("category"))
+        let toolbar = NSToolbar(identifier:"IDMMac.MainToolbar"); toolbar.delegate = self
+        toolbar.displayMode = .iconOnly; toolbar.sizeMode = .small; toolbar.allowsUserCustomization = false
+        window?.toolbar = toolbar; window?.toolbarStyle = .unified
+        let categoryColumn = NSTableColumn(identifier:.init("category"))
         categories.addTableColumn(categoryColumn); categories.outlineTableColumn = categoryColumn
-        categories.focusRingType = .none; categories.headerView = nil; categories.rowHeight = 26; categories.dataSource = self; categories.delegate = self
+        categories.focusRingType = .none; categories.headerView = nil; categories.rowHeight = 30
+        categories.dataSource = self; categories.delegate = self; categories.indentationPerLevel = 14
         categories.reloadData(); categories.expandItem("All Downloads"); categories.selectRowIndexes(IndexSet(integer:0),byExtendingSelection:false)
-        categories.backgroundColor = .white;categories.selectionHighlightStyle = .regular
+        categories.style = .sourceList; categories.backgroundColor = IDMTheme.sidebar
         categories.setAccessibilityLabel("Download categories")
-        let categoryScroll = NSScrollView(); categoryScroll.documentView = categories; categoryScroll.hasVerticalScroller = true
-        let sidebar = NSStackView(views: [NSTextField(labelWithString: "Categories"), categoryScroll])
-        sidebar.orientation = .vertical; sidebar.alignment = .leading; sidebar.spacing = 12
-        categoryScroll.widthAnchor.constraint(equalTo:sidebar.widthAnchor).isActive = true
+        let categoryScroll = NSScrollView(); categoryScroll.documentView = categories; categoryScroll.hasVerticalScroller = true; categoryScroll.drawsBackground = false
+        let sidebarTitle = NSTextField(labelWithString:"LIBRARY"); sidebarTitle.font = .systemFont(ofSize:10,weight:.semibold); sidebarTitle.textColor = .secondaryLabelColor
+        let sidebar = NSStackView(views:[sidebarTitle,categoryScroll]); sidebar.orientation = .vertical; sidebar.alignment = .leading; sidebar.spacing = 10
+        sidebar.edgeInsets = NSEdgeInsets(top:18,left:12,bottom:10,right:8)
+        sidebar.wantsLayer = true; sidebar.layer?.backgroundColor = IDMTheme.sidebar.cgColor
+        categoryScroll.widthAnchor.constraint(equalTo:sidebar.widthAnchor,constant:-20).isActive = true
         table.columnAutoresizingStyle = .uniformColumnAutoresizingStyle
-        table.backgroundColor = .white;table.gridStyleMask = [.solidHorizontalGridLineMask,.solidVerticalGridLineMask];table.gridColor = NSColor(white:0.93,alpha:1)
-        table.usesAlternatingRowBackgroundColors = false; table.allowsMultipleSelection = false
-        table.dataSource = self; table.delegate = self; table.rowHeight = 32
-        table.target = self; table.doubleAction = #selector(showProgress)
-        for (id, title, width) in [("name","File Name",260.0), ("size","Size",95.0), ("status","Status",100.0), ("progress","Progress",95.0), ("speed","Transfer Rate",110.0), ("date","Date Added",140.0)] {
-            let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier(id)); column.title = title; column.width = width
-            column.minWidth = ["name":180.0,"size":65.0,"status":80.0,"progress":65.0,"speed":95.0,"date":105.0][id] ?? 60
-            column.resizingMask = [.autoresizingMask,.userResizingMask]
-            table.addTableColumn(column)
+        table.backgroundColor = .textBackgroundColor; table.gridStyleMask = []; table.usesAlternatingRowBackgroundColors = false
+        table.allowsMultipleSelection = false; table.dataSource = self; table.delegate = self; table.rowHeight = 44
+        table.intercellSpacing = NSSize(width:0,height:0); table.target = self; table.doubleAction = #selector(showProgress)
+        for (id,title,width,minimum) in [("name","Name",280.0,170.0),("size","Size",90.0,65.0),("status","Status",105.0,85.0),("progress","Progress",140.0,100.0),("speed","Speed",100.0,80.0),("date","Added",110.0,85.0)] {
+            let column = NSTableColumn(identifier:.init(id)); column.title = title; column.width = width; column.minWidth = minimum
+            column.resizingMask = [.autoresizingMask,.userResizingMask]; table.addTableColumn(column)
         }
-        let scroll = NSScrollView(); scroll.documentView = table; scroll.hasVerticalScroller = true; scroll.hasHorizontalScroller = true
-        scroll.borderType = .bezelBorder
-        emptyTitle.font = .systemFont(ofSize:16,weight:.semibold)
-        let hint = NSTextField(labelWithString:"Choose Add URL to start a download.");hint.textColor = .secondaryLabelColor
-        let add = NSButton(title:"Add URL…",target:self,action:#selector(addURL));add.bezelStyle = .rounded
-        let empty = NSStackView(views:[emptyTitle,hint,add]);empty.orientation = .vertical;empty.spacing = 12;empty.translatesAutoresizingMaskIntoConstraints = false;content.addSubview(empty)
-        empty.isHidden = !visible.isEmpty;emptyGroup = empty
-        let split = NSSplitView(); split.isVertical = true; split.dividerStyle = .thin; split.addArrangedSubview(sidebar); split.addArrangedSubview(scroll)
-        failureLabel.textColor = .secondaryLabelColor;failureLabel.maximumNumberOfLines = 3
-        failureRetry.target = self;failureRetry.action = #selector(resume);failureRetry.bezelStyle = .rounded
-        let openPage = NSButton(title:"Open Website",target:self,action:#selector(openSelectedPage));openPage.bezelStyle = .rounded
-        failureStrip.setViews([failureLabel,failureRetry,openPage],in:.leading);failureStrip.orientation = .horizontal;failureStrip.spacing = 12;failureStrip.isHidden = true
+        let scroll = NSScrollView(); scroll.documentView = table; scroll.hasVerticalScroller = true; scroll.hasHorizontalScroller = true; scroll.borderType = .noBorder
+        listTitle.font = .systemFont(ofSize:17,weight:.semibold)
+        listSummary.font = .systemFont(ofSize:11); listSummary.textColor = .secondaryLabelColor
+        let heading = NSStackView(views:[listTitle,listSummary]); heading.orientation = .vertical; heading.alignment = .leading; heading.spacing = 3
+        search.placeholderString = "Search downloads"; search.target = self; search.action = #selector(searchChanged); search.sendsSearchStringImmediately = true
+        search.setAccessibilityLabel("Search downloads by filename, website or status")
+        search.widthAnchor.constraint(equalToConstant:210).isActive = true
+        let flexible = NSView(); flexible.setContentHuggingPriority(.defaultLow,for:.horizontal)
+        let header = NSStackView(views:[heading,flexible,search]); header.orientation = .horizontal; header.alignment = .centerY
+        header.edgeInsets = NSEdgeInsets(top:16,left:20,bottom:16,right:20)
+        let headerLine = NSBox(); headerLine.boxType = .separator
+        let list = NSStackView(views:[header,headerLine,scroll]); list.orientation = .vertical; list.alignment = .leading; list.spacing = 0
+        list.wantsLayer = true; list.layer?.backgroundColor = NSColor.textBackgroundColor.cgColor
+        for view in [header,headerLine,scroll] { view.widthAnchor.constraint(equalTo:list.widthAnchor).isActive = true }
+        let split = NSSplitView(); split.isVertical = true; split.dividerStyle = .thin; split.addArrangedSubview(sidebar); split.addArrangedSubview(list)
+        failureLabel.font = .systemFont(ofSize:12); failureLabel.textColor = .secondaryLabelColor; failureLabel.maximumNumberOfLines = 2
+        failureRetry.target = self; failureRetry.action = #selector(resume); failureRetry.bezelStyle = .rounded; failureRetry.controlSize = .small
+        let openPage = NSButton(title:"Open Website",target:self,action:#selector(openSelectedPage)); openPage.bezelStyle = .rounded; openPage.controlSize = .small
+        let warning = NSImageView(image:NSImage(systemSymbolName:"exclamationmark.circle",accessibilityDescription:"Download error")!); warning.contentTintColor = .systemOrange
+        warning.widthAnchor.constraint(equalToConstant:16).isActive = true
+        failureStrip.setViews([warning,failureLabel,failureRetry,openPage],in:.leading); failureStrip.orientation = .horizontal; failureStrip.spacing = 10
+        failureStrip.edgeInsets = NSEdgeInsets(top:10,left:16,bottom:10,right:16); failureStrip.isHidden = true
         failureLabel.setContentCompressionResistancePriority(.defaultLow,for:.horizontal)
-        status.font = .systemFont(ofSize:12);status.textColor = .secondaryLabelColor;status.lineBreakMode = .byTruncatingTail
-        let root = NSStackView(views: [split, failureStrip, status]); root.orientation = .vertical; root.alignment = .leading; root.spacing = 12
+        status.font = .systemFont(ofSize:11); status.textColor = .secondaryLabelColor; status.lineBreakMode = .byTruncatingTail
+        let statusRow = NSStackView(views:[status]); statusRow.orientation = .horizontal; statusRow.edgeInsets = NSEdgeInsets(top:8,left:16,bottom:8,right:16)
+        let footerLine = NSBox(); footerLine.boxType = .separator
+        let root = NSStackView(views:[split,failureStrip,footerLine,statusRow]); root.orientation = .vertical; root.alignment = .leading; root.spacing = 0
         root.translatesAutoresizingMaskIntoConstraints = false; content.addSubview(root)
-        for view in [split, failureStrip, status] { view.translatesAutoresizingMaskIntoConstraints = false; view.widthAnchor.constraint(equalTo: root.widthAnchor).isActive = true }
-        NSLayoutConstraint.activate([root.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 16),root.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -16),root.topAnchor.constraint(equalTo: content.topAnchor, constant: 12),root.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: -12),sidebar.widthAnchor.constraint(equalToConstant: 185)])
-        content.addSubview(empty,positioned:.above,relativeTo:root)
+        for view in [split,failureStrip,footerLine,statusRow] { view.widthAnchor.constraint(equalTo:root.widthAnchor).isActive = true }
+        NSLayoutConstraint.activate([root.leadingAnchor.constraint(equalTo:content.leadingAnchor),root.trailingAnchor.constraint(equalTo:content.trailingAnchor),root.topAnchor.constraint(equalTo:content.topAnchor),root.bottomAnchor.constraint(equalTo:content.bottomAnchor),sidebar.widthAnchor.constraint(equalToConstant:192)])
+        emptyTitle.font = .systemFont(ofSize:17,weight:.semibold)
+        let emptyIcon = NSImageView(image:NSImage(systemSymbolName:"tray.and.arrow.down",accessibilityDescription:"Downloads")!); emptyIcon.contentTintColor = .tertiaryLabelColor
+        emptyIcon.widthAnchor.constraint(equalToConstant:32).isActive = true; emptyIcon.heightAnchor.constraint(equalToConstant:32).isActive = true
+        let hint = NSTextField(labelWithString:"Add a URL or send a file from your browser."); hint.font = .systemFont(ofSize:12); hint.textColor = .secondaryLabelColor
+        let add = NSButton(title:"Add URL…",target:self,action:#selector(addURL)); add.bezelStyle = .rounded
+        let empty = NSStackView(views:[emptyIcon,emptyTitle,hint,add]); empty.orientation = .vertical; empty.spacing = 10; empty.translatesAutoresizingMaskIntoConstraints = false
+        empty.isHidden = !visible.isEmpty; emptyGroup = empty; content.addSubview(empty,positioned:.above,relativeTo:root)
         NSLayoutConstraint.activate([empty.centerXAnchor.constraint(equalTo:scroll.centerXAnchor),empty.centerYAnchor.constraint(equalTo:scroll.centerYAnchor)])
-        table.setAccessibilityLabel("Downloads")
+        table.setAccessibilityLabel("Downloads"); updateStatus()
     }
+    @objc private func searchChanged() { refresh() }
+    func tableView(_ tableView:NSTableView,rowViewForRow row:Int) -> NSTableRowView? { DownloadTableRowView() }
     func outlineView(_ outlineView: NSOutlineView, numberOfChildrenOfItem item: Any?) -> Int {
-        if item == nil { return 5 }
+        if item == nil { return 4 }
         if item as? String == "All Downloads" { return 6 }
         if item as? String == "Queues" { return 1 }
         return 0
     }
     func outlineView(_ outlineView: NSOutlineView, child index: Int, ofItem item: Any?) -> Any {
-        if item == nil { return ["All Downloads", "Unfinished", "Finished", "Grabber projects", "Queues"][index] }
+        if item == nil { return ["All Downloads", "Unfinished", "Finished", "Queues"][index] }
         if item as? String == "Queues" { return "Main Queue" }
         return ["Compressed", "Documents", "Music", "Programs", "Video", "Other"][index]
     }
@@ -301,7 +355,7 @@ import CryptoKit
     }
     func outlineView(_ outlineView:NSOutlineView,viewFor tableColumn:NSTableColumn?,item:Any) -> NSView? {
         guard let title = item as? String else { return nil }
-        let icon = NSImageView();icon.image = IDMTheme.icon(IDMTheme.categorySymbol(title),color:IDMTheme.color(title),size:15)
+        let icon = NSImageView(); icon.image = NSImage(systemSymbolName:IDMTheme.categorySymbol(title),accessibilityDescription:title); icon.contentTintColor = .secondaryLabelColor
         icon.widthAnchor.constraint(equalToConstant:18).isActive = true
         let label = NSTextField(labelWithString:title);label.font = .systemFont(ofSize:12);label.lineBreakMode = .byTruncatingTail
         let stack = NSStackView(views:[icon,label]);stack.spacing = 6;stack.alignment = .centerY
@@ -309,33 +363,66 @@ import CryptoKit
     }
     func tableView(_ tableView:NSTableView,viewFor tableColumn:NSTableColumn?,row:Int) -> NSView? {
         guard visible.indices.contains(row), let column = tableColumn else { return nil }
-        let job = visible[row]
+        let job = visible[row], host = NSView()
         if column.identifier.rawValue == "progress" {
-            let progress = NSProgressIndicator();progress.isIndeterminate = false;progress.style = .bar;progress.minValue = 0;progress.maxValue = 100
+            let progress = NSProgressIndicator(); progress.isIndeterminate = false; progress.style = .bar; progress.controlSize = .small; progress.minValue = 0; progress.maxValue = 100
             progress.doubleValue = job.state == .completed ? 100 : job.totalBytes > 0 ? min(100,Double(job.receivedBytes)/Double(job.totalBytes)*100) : 0
-            progress.toolTip = self.tableView(tableView,objectValueFor:column,row:row) as? String
-            let host = NSView();progress.translatesAutoresizingMaskIntoConstraints = false;host.addSubview(progress)
-            NSLayoutConstraint.activate([progress.leadingAnchor.constraint(equalTo:host.leadingAnchor,constant:8),progress.trailingAnchor.constraint(equalTo:host.trailingAnchor,constant:-8),progress.centerYAnchor.constraint(equalTo:host.centerYAnchor)])
-            return host
+            let value = NSTextField(labelWithString:job.totalBytes > 0 || job.state == .completed ? String(format:"%.0f%%",progress.doubleValue) : "—")
+            value.font = .monospacedDigitSystemFont(ofSize:10,weight:.regular); value.textColor = .secondaryLabelColor; value.alignment = .right
+            progress.translatesAutoresizingMaskIntoConstraints = false; value.translatesAutoresizingMaskIntoConstraints = false
+            host.addSubview(progress); host.addSubview(value)
+            NSLayoutConstraint.activate([progress.leadingAnchor.constraint(equalTo:host.leadingAnchor,constant:10),progress.trailingAnchor.constraint(equalTo:value.leadingAnchor,constant:-8),progress.centerYAnchor.constraint(equalTo:host.centerYAnchor),value.trailingAnchor.constraint(equalTo:host.trailingAnchor,constant:-10),value.widthAnchor.constraint(equalToConstant:32),value.centerYAnchor.constraint(equalTo:host.centerYAnchor)])
+            progress.toolTip = "\(job.receivedBytes) of \(job.totalBytes) bytes"; return host
         }
         let text = self.tableView(tableView,objectValueFor:column,row:row) as? String ?? ""
-        let label = NSTextField(labelWithString:text);label.font = .systemFont(ofSize:12);label.lineBreakMode = .byTruncatingMiddle;label.toolTip = text
-        if column.identifier.rawValue == "status" { label.textColor = job.state == .failed ? .systemRed : job.state == .completed ? IDMTheme.green : .secondaryLabelColor }
-        var views:[NSView] = [label]
+        let label = NSTextField(labelWithString:text); label.font = .systemFont(ofSize:12); label.lineBreakMode = .byTruncatingMiddle; label.toolTip = text
         if column.identifier.rawValue == "name" {
-            let icon = NSImageView();icon.image = NSWorkspace.shared.icon(for:UTType(filenameExtension:job.destination.pathExtension) ?? .data);icon.widthAnchor.constraint(equalToConstant:18).isActive = true;icon.heightAnchor.constraint(equalToConstant:18).isActive = true;views.insert(icon,at:0)
+            label.font = .systemFont(ofSize:12,weight:.medium)
+            let source = NSTextField(labelWithString:job.browserSourceURL == nil ? job.url.host ?? "" : "Browser import · " + (job.url.host ?? "")); source.font = .systemFont(ofSize:10); source.textColor = .secondaryLabelColor; source.lineBreakMode = .byTruncatingMiddle
+            let names = NSStackView(views:[label,source]); names.orientation = .vertical; names.alignment = .leading; names.spacing = 3
+            let icon = NSImageView(image:NSWorkspace.shared.icon(for:UTType(filenameExtension:job.destination.pathExtension) ?? .data)); icon.widthAnchor.constraint(equalToConstant:22).isActive = true; icon.heightAnchor.constraint(equalToConstant:22).isActive = true
+            let stack = NSStackView(views:[icon,names]); stack.spacing = 10; stack.alignment = .centerY; stack.translatesAutoresizingMaskIntoConstraints = false; host.addSubview(stack)
+            for view in [label,source] { view.widthAnchor.constraint(equalTo:names.widthAnchor).isActive = true }
+            NSLayoutConstraint.activate([stack.leadingAnchor.constraint(equalTo:host.leadingAnchor,constant:12),stack.trailingAnchor.constraint(equalTo:host.trailingAnchor,constant:-10),stack.centerYAnchor.constraint(equalTo:host.centerYAnchor)])
+        } else {
+            if column.identifier.rawValue == "status" { label.textColor = IDMTheme.stateColor(job.state); label.font = .systemFont(ofSize:11,weight:.medium) }
+            if ["size","speed"].contains(column.identifier.rawValue) { label.font = .monospacedDigitSystemFont(ofSize:11,weight:.regular); label.alignment = .right }
+            if column.identifier.rawValue == "date" { label.font = .systemFont(ofSize:11); label.textColor = .secondaryLabelColor }
+            label.translatesAutoresizingMaskIntoConstraints = false; host.addSubview(label)
+            NSLayoutConstraint.activate([label.leadingAnchor.constraint(equalTo:host.leadingAnchor,constant:10),label.trailingAnchor.constraint(equalTo:host.trailingAnchor,constant:-10),label.centerYAnchor.constraint(equalTo:host.centerYAnchor)])
         }
-        let stack = NSStackView(views:views);stack.spacing = 6;stack.alignment = .centerY;stack.edgeInsets = NSEdgeInsets(top:0,left:6,bottom:0,right:6)
-        return stack
+        return host
     }
     private func alert(_ error: Error) { NSAlert(error: error).runModal() }
     @discardableResult private func persist() -> Bool {
         do { try store.save(jobs); lastPersist = Date(); storageError = nil; writeBrowserQAReport(); return true } catch { runningQueue = false; storageError = error.localizedDescription; status.stringValue = error.localizedDescription; return false }
     }
-    private func refresh() { let selectedID = selected?.id;emptyGroup?.isHidden = !visible.isEmpty;emptyTitle.stringValue = jobs.isEmpty ? "No downloads yet" : "No downloads in this category";table.reloadData();if let selectedID,let row = visible.firstIndex(where:{$0.id == selectedID}) { table.selectRowIndexes(IndexSet(integer:row),byExtendingSelection:false) }; window?.toolbar?.validateVisibleItems(); updateStatus(); if let id = detailsController?.jobID, let job = jobs.first(where:{$0.id == id}) { detailsController?.update(job,speed:progressTimes[id]?.2 ?? 0) } }
-    func tableViewSelectionDidChange(_ notification:Notification) { window?.toolbar?.validateVisibleItems();updateStatus() }
+    private func refresh() {
+        let selectedID = selectedJobID
+        emptyGroup?.isHidden = !visible.isEmpty
+        emptyTitle.stringValue = !search.stringValue.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty ? "No matching downloads" : jobs.isEmpty ? "No downloads yet" : "No downloads in this category"
+        refreshingTable = true
+        table.reloadData()
+        if let selectedID,let row = visible.firstIndex(where:{$0.id == selectedID}) {
+            table.selectRowIndexes(IndexSet(integer:row),byExtendingSelection:false)
+        } else {
+            table.deselectAll(nil); selectedJobID = nil
+        }
+        refreshingTable = false
+        window?.toolbar?.validateVisibleItems(); updateStatus()
+        if let id = detailsController?.jobID, let job = jobs.first(where:{$0.id == id}) { detailsController?.update(job,speed:progressTimes[id]?.2 ?? 0) }
+    }
+    func tableViewSelectionDidChange(_ notification:Notification) {
+        guard !refreshingTable else { return }
+        let row = table.selectedRow
+        selectedJobID = visible.indices.contains(row) ? visible[row].id : nil
+        window?.toolbar?.validateVisibleItems(); updateStatus()
+    }
     @objc private func openSelectedPage() { if let job = selected { NSWorkspace.shared.open(job.url) } }
     private func updateStatus() {
+        listTitle.stringValue = categoryFilter == "Grabber projects" ? "Site Grabber" : categoryFilter
+        listSummary.stringValue = "\(visible.count) \(visible.count == 1 ? "download" : "downloads")"
+
         failureStrip.isHidden = selected?.error == nil
         failureLabel.stringValue = selected?.error ?? "";failureLabel.toolTip = selected?.error
         failureRetry.isEnabled = selected?.browserSourceURL == nil && (selected?.state == .failed || selected?.state == .paused)
@@ -489,5 +576,12 @@ import CryptoKit
         guard a.runModal() == .alertFirstButtonReturn else { return }
         let panel = NSOpenPanel(); panel.canChooseFiles = false; panel.canChooseDirectories = true; panel.canCreateDirectories = true
         guard panel.runModal() == .OK, let directory = panel.url else { return }; addBatch(text.string.components(separatedBy:.newlines),directory:directory)
+    }
+}
+
+@MainActor private final class DownloadTableRowView: NSTableRowView {
+    override func drawSeparator(in dirtyRect:NSRect) {
+        NSColor.separatorColor.withAlphaComponent(0.35).setFill()
+        NSRect(x:0,y:bounds.maxY-1,width:bounds.width,height:1).fill()
     }
 }
