@@ -18,7 +18,8 @@ async function sessionLink(link, tab) {
   if ((await settings()).session) {
     const origin = IDMCore.permissionPattern(result.url);
     if (!await api.permissions.contains({permissions:['cookies'],origins:[origin]})) throw new Error('Allow cookie and site access using the popup first');
-    const details = {url:result.url}; if (tab?.cookieStoreId) details.storeId = tab.cookieStoreId;
+    const stores = tab?.cookieStoreId ? [] : await api.cookies.getAllCookieStores();
+    const details = {url:result.url,storeId:IDMCore.cookieStore(tab,stores)};
     const cookies = await api.cookies.getAll(details);
     result.headers = {'User-Agent':navigator.userAgent};
     if (cookies.length) result.headers.Cookie = cookies.map(c => `${c.name}=${c.value}`).join('; ');
