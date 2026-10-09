@@ -8,3 +8,20 @@ test('batch deduplication preserves first filename and source page',()=> { const
 
 test('mixed HTTP and Blob collections retain HTTP batch',()=>assert.deepEqual(core.httpLinks([{url:'blob:https://a.test/id'},{url:'https://a.test/f'}]),[{url:'https://a.test/f'}]));
 test('site permission patterns omit TCP port',()=> {assert.equal(core.permissionPattern('http://127.0.0.1:5432/path'),'http://127.0.0.1/*'); assert.equal(core.permissionPattern('https://example.com:8443/f'),'https://example.com/*');});
+
+import {execFileSync} from 'node:child_process';
+import {readFileSync,mkdtempSync,rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import vm from 'node:vm';
+test('universal bookmarklet hands off ordinary HTTP without randomUUID',()=> {
+ const directory = mkdtempSync(tmpdir() + '/idm-bookmarklet-');
+ try {
+  execFileSync('python3',[new URL('../../scripts/build_extensions.py',import.meta.url).pathname,'--output',directory]);
+  const source = readFileSync(directory + '/bookmarklet.txt','utf8').replace(/^javascript:/,'');
+  const location = {href:'http://example.test/file'};
+  const context = {location,getSelection:()=>null,document:{querySelectorAll:()=>[]},prompt:()=>location.href,crypto:{getRandomValues:bytes=>{bytes.fill(9);return bytes;}},TextEncoder,Uint8Array,btoa:value=>Buffer.from(value,'binary').toString('base64'),alert:()=>assert.fail('unexpected alert')};
+  vm.runInNewContext(source,context);
+  const url = new URL(location.href); const payload = JSON.parse(Buffer.from(url.searchParams.get('payload'),'base64url').toString());
+  assert.equal(url.protocol,'idm-mac:'); assert.match(payload.id,/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/); assert.equal(payload.links[0].url,'http://example.test/file');
+ } finally {rmSync(directory,{recursive:true,force:true});}
+});

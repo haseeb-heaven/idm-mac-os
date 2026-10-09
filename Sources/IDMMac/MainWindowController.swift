@@ -194,11 +194,11 @@ import CryptoKit
     }
     func validateToolbarItem(_ item:NSToolbarItem) -> Bool {
         switch item.itemIdentifier.rawValue {
-        case "resume": return selected.map { $0.state == .paused || $0.state == .failed } ?? false
+        case "resume": return selected.map { $0.browserSourceURL == nil && ($0.state == .paused || $0.state == .failed) } ?? false
         case "stop": return selected.map { $0.state == .downloading || $0.state == .queued } ?? false
         case "delete", "details": return selected != nil
-        case "schedule": return selected.map { $0.state != .completed && tasks[$0.id] == nil } ?? false
-        case "stopAll": return !tasks.isEmpty || jobs.contains(where:{$0.state == .queued})
+        case "schedule": return selected.map { $0.browserSourceURL == nil && $0.state != .completed && tasks[$0.id] == nil } ?? false
+        case "stopAll": return !tasks.isEmpty || jobs.contains(where:{$0.state == .queued || $0.state == .downloading})
         case "startQueue": return !runningQueue && jobs.contains(where:{$0.state == .queued})
         case "stopQueue": return runningQueue
         default:return true
@@ -338,7 +338,7 @@ import CryptoKit
     private func updateStatus() {
         failureStrip.isHidden = selected?.error == nil
         failureLabel.stringValue = selected?.error ?? "";failureLabel.toolTip = selected?.error
-        failureRetry.isEnabled = selected?.state == .failed || selected?.state == .paused
+        failureRetry.isEnabled = selected?.browserSourceURL == nil && (selected?.state == .failed || selected?.state == .paused)
  if let job = selected, let error = job.error { status.stringValue = "Download failed · " + (job.url.host ?? "");status.toolTip = error;return }; if let storageError { status.stringValue = storageError; return }; status.stringValue = "\(jobs.count) downloads · \(tasks.count) active · Queue \(runningQueue ? "running" : "stopped")" }
     @objc private func filterChanged() { refresh() }
     @objc private func about() { let a = NSAlert(); a.messageText = "IDM Mac"; a.informativeText = "Personal native macOS download manager. Version 0.1. Feature parity research is ongoing."; a.runModal() }

@@ -43,7 +43,7 @@ import IDMCore
         progress.doubleValue = job.state == .completed ? 1 : job.totalBytes > 0 ? min(1,Double(job.receivedBytes)/Double(job.totalBytes)) : 0
         if progress.isIndeterminate { progress.startAnimation(nil) } else { progress.stopAnimation(nil) }
         errorLabel.stringValue = job.error ?? "";errorLabel.isHidden = job.error == nil
-        resumeButton.isEnabled = job.state == .paused || job.state == .failed
+        resumeButton.isEnabled = job.browserSourceURL == nil && (job.state == .paused || job.state == .failed)
         pauseButton.isEnabled = job.state == .downloading || job.state == .queued
         revealButton.isEnabled = job.state == .completed
     }
