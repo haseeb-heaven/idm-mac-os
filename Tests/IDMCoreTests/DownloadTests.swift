@@ -52,6 +52,11 @@ final class DownloadTests: @unchecked Sendable {
         let data = try Data(contentsOf:job.destination)
         try XCTAssertEqual(SHA256.hash(data:data),SHA256.hash(data:expected()))
     }
+    func testGrabberExtensionlessDownloads() async throws {
+        let fixture = try Fixture()
+        let links = try await SiteGrabber.links(on:fixture.base.appendingPathComponent("downloadpage"))
+        try XCTAssertEqual(links.map(\.path),["/download/win-x64","/download/linux-x64","/download/osx-arm64","/api/binary"])
+    }
     func testMissingValidatorFallback() async throws { try await check("omitignore") }
     func testEmptyHeadFallback() async throws {
         let fixture = try Fixture();let dir = try directory();defer { try? FileManager.default.removeItem(at:dir) }
@@ -309,9 +314,55 @@ final class DownloadTests: @unchecked Sendable {
 }
 
 private func log(_ text:String) { FileHandle.standardOutput.write(Data((text + "\n").utf8)) }
+private func runOpenIGICheck(output:URL) async throws -> String {
+    let page=URL(string:"https://openigi.com/")!
+    let links=try await SiteGrabber.links(on:page)
+    let discovery:[String:Any] = ["page":page.absoluteString,"grabberLinks":links.map(\.absoluteString),"nativeGrabber":true]
+    try JSONSerialization.data(withJSONObject:discovery,options:[.prettyPrinted,.sortedKeys]).write(to:output.deletingPathExtension().appendingPathExtension("grabber.json"),options:.atomic)
+    let selected=ProcessInfo.processInfo.environment["IDM_OPENIGI_OS"] ?? "win-x64"
+    guard let url=links.first(where:{$0.host == "api.openigi.com" && $0.path == "/download/"+selected}) else { throw DownloadError.storage("Native Grabber did not find OS endpoint") }
+    let directory=ProcessInfo.processInfo.environment["IDM_OPENIGI_WORK_DIRECTORY"].map { URL(fileURLWithPath:$0) } ?? output.deletingLastPathComponent().appendingPathComponent("native-"+selected+"-"+UUID().uuidString)
+    guard directory.standardizedFileURL.deletingLastPathComponent() == output.standardizedFileURL.deletingLastPathComponent(),
+          directory.lastPathComponent.hasPrefix("native-"+selected+"-") else { throw DownloadError.invalidDestination }
+    if FileManager.default.fileExists(atPath:directory.path) {
+        guard try directory.resourceValues(forKeys:[.isSymbolicLinkKey]).isSymbolicLink != true,
+              try FileManager.default.contentsOfDirectory(atPath:directory.path).isEmpty else { throw DownloadError.destinationExists }
+    }
+    try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
+    defer { try? FileManager.default.removeItem(at:directory) }
+    let engineURL=ProcessInfo.processInfo.environment["IDM_OPENIGI_DIRECT_URL"].flatMap(URL.init(string:)) ?? url
+    guard engineURL.scheme == "https",engineURL.host == "api.openigi.com" || engineURL.host == "dl.openigi.com",engineURL.user == nil,engineURL.password == nil else { throw DownloadError.invalidURL }
+    let job=try DownloadJob(url:engineURL,destination:directory.appendingPathComponent("artifact"))
+    var options=DownloadOptions();options.connections=Int(ProcessInfo.processInfo.environment["IDM_OPENIGI_CONNECTIONS"] ?? "4") ?? 4;options.chunkBytes=1024*1024
+    if ProcessInfo.processInfo.environment["IDM_OPENIGI_SINGLE_STREAM"] == "1" { options.useRanges=false }
+    let started=Date();let engine=DownloadEngine(workDirectory:directory.appendingPathComponent("partials"))
+    var attempts=0;var interruptions:[String]=[]
+    while true {
+        attempts += 1
+        do { try await engine.run(job:job,options:options);break }
+        catch {
+            let problem=error as NSError
+            guard attempts < 5,problem.domain == NSURLErrorDomain else { throw error }
+            interruptions.append(problem.localizedDescription)
+        }
+    }
+    let handle=try FileHandle(forReadingFrom:job.destination);defer { try? handle.close() }
+    var hash=SHA256(),count:Int64=0
+    while let chunk=try handle.read(upToCount:1024*1024),!chunk.isEmpty { hash.update(data:chunk);count += Int64(chunk.count) }
+    try handle.seek(toOffset:0)
+    let magic=try handle.read(upToCount:4) ?? Data()
+    let expectedMagic:Data = selected == "win-x64" ? Data([0x4d,0x5a]) : selected == "linux-x64" ? Data([0x7f,0x45,0x4c,0x46]) : Data([0x1f,0x8b])
+    guard magic.starts(with:expectedMagic) else { throw DownloadError.storage("Downloaded payload does not match expected OS file format") }
+    let evidence:[String:Any] = ["magicHex":magic.map { String(format:"%02x",$0) }.joined(),"page":page.absoluteString,"grabberLinks":links.map(\.absoluteString),"os":selected,"url":url.absoluteString,"bytes":count,"sha256":hash.finalize().map { String(format:"%02x",$0) }.joined(),"seconds":Date().timeIntervalSince(started),"nativeEngine":true,"engineAttempts":attempts,"interruptions":interruptions,"engineURL":engineURL.absoluteString,"connections":options.connections,"chunkBytes":options.chunkBytes,"useRanges":options.useRanges]
+    try JSONSerialization.data(withJSONObject:evidence,options:[.prettyPrinted,.sortedKeys]).write(to:output,options:.atomic)
+    return "Native OpenIGI \(selected) downloaded \(count) bytes"
+}
 @main struct TestRunner {
     static func main() async throws {
         if ProcessInfo.processInfo.environment["IDM_BROWSER_CHECKS_ONLY"] == "1" { let count=try await runBrowserChecks();print("Passed \(count) browser checks");return }
+        if let path = ProcessInfo.processInfo.environment["IDM_OPENIGI_OUTPUT"] {
+            let result = try await runOpenIGICheck(output:URL(fileURLWithPath:path));print(result);return
+        }
         let suite = DownloadTests()
         if ProcessInfo.processInfo.arguments.contains("--large") { try await suite.testFiveGiBDownload();return }
         if ProcessInfo.processInfo.arguments.contains("--https") { try await suite.testTrustedHTTPS();log("PASS trusted HTTPS with independent SHA256 reference");return }
@@ -381,6 +432,7 @@ private func log(_ text:String) { FileHandle.standardOutput.write(Data((text + "
         try suite.testBrowserLocalURLs();passed += 1;log("PASS testBrowserLocalURLs")
         log("RUN testURLValidation"); try suite.testURLValidation(); passed += 1; log("PASS testURLValidation")
         passed += try await runBrowserChecks();log("PASS browser protocol, blobs, legacy jobs and Keychain")
+        try await suite.testGrabberExtensionlessDownloads();passed += 1;log("PASS extensionless Grabber download endpoints")
         log("Passed \(passed) checks")
     }
 }
