@@ -1,6 +1,6 @@
 # macOS compatibility
 
-IDM Mac 0.2.0 targets macOS 13 Ventura and newer. The native application and native browser messaging host are available in three packages:
+IDM 0.2.0 targets macOS 13 Ventura and newer. The native application and native browser messaging host are available in three packages:
 
 | Package | Processor | Deployment target |
 | --- | --- | --- |
@@ -21,7 +21,7 @@ scripts/package.sh --arch universal
 python3 scripts/release_artifacts.py
 ```
 
-Default `scripts/package.sh` still produces `build/IDM Mac.app` for the build machine's architecture. Architecture packages appear in `build/releases/<architecture>/IDM Mac.app`. The release script verifies both executable architectures, their `LC_BUILD_VERSION` macOS deployment targets, version metadata, and strict code signatures. It writes three ZIP archives, `SHA256SUMS`, and `release-manifest.json` containing hashes for each archive and executable.
+Default `scripts/package.sh` still produces `build/IDM.app` for the build machine's architecture. Architecture packages appear in `build/releases/<architecture>/IDM.app`. The release script verifies both executable architectures, their `LC_BUILD_VERSION` macOS deployment targets, version metadata, and strict code signatures. It writes three ZIP archives, `SHA256SUMS`, and `release-manifest.json` containing hashes for each archive and executable.
 
 Version metadata has one source: `version.json`. Browser extension compatibility depends on the browser as well as the operating system; see [browser integrations](browser-integrations.md). Safari's packaged native extension is not included.
 

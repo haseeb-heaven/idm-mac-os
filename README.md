@@ -1,10 +1,14 @@
-# IDM Mac
+# IDM
 
-**A personal, native macOS download manager informed by reverse engineering of Windows IDM.**
+**A personal, native macOS port of Internet Download Manager, informed by reverse engineering of Windows IDM.**
 
 Swift 6 · AppKit · URLSession · SQLite · Keychain · macOS 13+ · Apple Silicon / Intel / Universal
 
 This is an independent project for `haseeb-heaven`, with no affiliation or endorsement from Tonec. It is not an official “IDM for Mac” release. The owner's Windows copy supplies the analysis and execution reference.
+
+## Credits
+
+Internet Download Manager is made by the original IDM team at Tonec FZE — https://www.internetdownloadmanager.com/. This repository is an unofficial macOS port, not the official software. If you use Windows, please buy an official IDM license to support the original team so tools like this can keep existing on other platforms.
 
 ![Native macOS interface during an actual integration test](docs/screenshots/idm-classic-downloads-v020.png)
 
@@ -21,9 +25,9 @@ This is an independent project for `haseeb-heaven`, with no affiliation or endor
 | Browser setup and compatibility | [Native messaging, extensions and browser test evidence](docs/browser-integrations.md) |
 | Regression checks and review | [Verification record](docs/verification.md) |
 
-## Download v0.2.0
+## Download v0.2.1
 
-[Get the latest release](https://github.com/haseeb-heaven/idm-mac-os/releases/latest): choose Apple Silicon (`arm64`), Intel (`x86_64`), or Universal. Extract the ZIP and move **IDM Mac.app** to Applications. Packages are ad hoc signed and are not notarized; macOS may require approval in System Settings → Privacy & Security. Check the included `SHA256SUMS` before installation.
+[Get the latest release](https://github.com/haseeb-heaven/idm-mac-os/releases/latest): choose Apple Silicon (`arm64`), Intel (`x86_64`), or Universal. Extract the ZIP and move **IDM.app** to Applications. Packages are ad hoc signed and are not notarized; macOS may require approval in System Settings → Privacy & Security. Check the included `SHA256SUMS` before installation.
 
 See [macOS compatibility and executed architecture checks](docs/macos-compatibility.md), [classic toolbar design and AgentReach research](docs/design/idm-classic-v020.md), and [release notes](docs/release-notes-v0.2.0.md).
 
@@ -33,12 +37,12 @@ See [macOS compatibility and executed architecture checks](docs/macos-compatibil
 git clone git@github.com:haseeb-heaven/idm-mac-os.git
 cd idm-mac-os
 scripts/package.sh
-open "build/IDM Mac.app"
+open "build/IDM.app"
 ```
 
 Requirements: Apple Silicon or Intel Mac, macOS 13+, Swift 6 Command Line Tools, and Python 3.12 for fixtures/build resources, and Node.js 22 for extension checks. The Swift package has no external dependencies. A full Xcode installation is unnecessary. `scripts/swift.sh` handles the inconsistent SwiftPM interfaces on the development Mac using a project-local public-interface copy.
 
-For personal installation and native host registration, run `scripts/install.sh`; it installs to `~/Applications/IDM Mac.app`. Browser extensions must then be loaded using the included setup instructions.
+For personal installation and native host registration, run `scripts/install.sh`; it installs to `~/Applications/IDM.app`. Browser extensions must then be loaded using the included setup instructions.
 
 The release bundle is locally ad hoc signed. App data is stored in `~/Library/Application Support/IDMMac/`; credentials are stored in Keychain.
 

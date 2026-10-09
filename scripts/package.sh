@@ -11,23 +11,23 @@ if [[ "$architecture" == native ]]; then
   scripts/swift.sh build --disable-sandbox -c release --product IDMMac
   scripts/swift.sh build --disable-sandbox -c release --product IDMBrowserHost
   binary_directory=.build/release
-  app="$PWD/build/IDM Mac.app"
+  app="$PWD/build/IDM.app"
 elif [[ "$architecture" == universal ]]; then
   scripts/package.sh --arch arm64
   scripts/package.sh --arch x86_64
   binary_directory=build/release-targets/universal
   mkdir -p "$binary_directory"
   for product in IDMMac IDMBrowserHost; do
-    lipo -create "build/releases/arm64/IDM Mac.app/Contents/MacOS/$product" "build/releases/x86_64/IDM Mac.app/Contents/MacOS/$product" -output "$binary_directory/$product"
+    lipo -create "build/releases/arm64/IDM.app/Contents/MacOS/$product" "build/releases/x86_64/IDM.app/Contents/MacOS/$product" -output "$binary_directory/$product"
   done
-  app="$PWD/build/releases/universal/IDM Mac.app"
+  app="$PWD/build/releases/universal/IDM.app"
 else
   target_triple="$architecture-apple-macosx13.0"
   scratch_directory="build/release-targets/$architecture"
   scripts/swift.sh build --disable-sandbox -c release --triple "$target_triple" --scratch-path "$scratch_directory" --product IDMMac
   scripts/swift.sh build --disable-sandbox -c release --triple "$target_triple" --scratch-path "$scratch_directory" --product IDMBrowserHost
   binary_directory=$(scripts/swift.sh build -c release --triple "$target_triple" --scratch-path "$scratch_directory" --show-bin-path)
-  app="$PWD/build/releases/$architecture/IDM Mac.app"
+  app="$PWD/build/releases/$architecture/IDM.app"
 fi
 python3 scripts/build_extensions.py --output build/extensions
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
@@ -35,21 +35,27 @@ rm -rf "$app/Contents/Resources/BrowserIntegration"
 cp -R build/extensions "$app/Contents/Resources/BrowserIntegration"
 cp integrations/identity.json "$app/Contents/Resources/BrowserIntegration/identity.json"
 cp version.json "$app/Contents/Resources/version.json"
+# Local-only app icon override (e.g. build/local-icon/IDMMac.icns). Vendor
+# artwork is never committed; this stays a no-op on CI and fresh clones.
+if [[ -f build/local-icon/IDMMac.icns ]]; then
+  cp build/local-icon/IDMMac.icns "$app/Contents/Resources/IDMMac.icns"
+fi
 cp "$binary_directory/IDMBrowserHost" "$app/Contents/MacOS/IDMBrowserHost"
 cp "$binary_directory/IDMMac" "$app/Contents/MacOS/IDMMac"
 python3 - "$app" <<'PY'
 import json, plistlib, sys
 from pathlib import Path
 v=json.loads(Path('version.json').read_text())
-p={'CFBundleExecutable':'IDMMac','CFBundleIdentifier':'local.haseebheaven.idmmac','CFBundleName':'IDM Mac','CFBundleDisplayName':'IDM Mac','CFBundlePackageType':'APPL','CFBundleShortVersionString':v['version'],'CFBundleVersion':v['build'],'LSMinimumSystemVersion':v['minimumMacOS'],'CFBundleURLTypes':[{'CFBundleURLName':'IDM Mac Browser Handoff','CFBundleURLSchemes':['idm-mac']}],'NSPrincipalClass':'NSApplication','NSHighResolutionCapable':True}
+p={'CFBundleExecutable':'IDMMac','CFBundleIdentifier':'local.haseebheaven.idmmac','CFBundleName':'IDM','CFBundleDisplayName':'IDM','CFBundlePackageType':'APPL','CFBundleShortVersionString':v['version'],'CFBundleVersion':v['build'],'LSMinimumSystemVersion':v['minimumMacOS'],'CFBundleURLTypes':[{'CFBundleURLName':'IDM Browser Handoff','CFBundleURLSchemes':['idm-mac']}],'NSPrincipalClass':'NSApplication','NSHighResolutionCapable':True}
+if (Path(sys.argv[1])/'Contents/Resources/IDMMac.icns').exists(): p['CFBundleIconFile']='IDMMac'
 with (Path(sys.argv[1])/'Contents/Info.plist').open('wb') as f: plistlib.dump(p,f)
 PY
 # Sign outside Documents: FileProvider can reattach forbidden Finder metadata.
 final_app="$app"
 signing_directory=$(mktemp -d /private/tmp/idm-package-sign.XXXXXX)
 trap 'rm -rf "$signing_directory"' EXIT
-/usr/bin/ditto --norsrc --noextattr "$app" "$signing_directory/IDM Mac.app"
-app="$signing_directory/IDM Mac.app"
+/usr/bin/ditto --norsrc --noextattr "$app" "$signing_directory/IDM.app"
+app="$signing_directory/IDM.app"
 xattr -cr "$app"
 xattr -d com.apple.FinderInfo "$app" 2>/dev/null || true
 codesign --force --sign - "$app/Contents/MacOS/IDMBrowserHost"

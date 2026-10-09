@@ -10,7 +10,7 @@ enum BrowserRegistration {
         for path in chromium + ["Mozilla"] {
             let directory = root.appendingPathComponent(path).appendingPathComponent("NativeMessagingHosts")
             try FileManager.default.createDirectory(at:directory,withIntermediateDirectories:true)
-            var manifest:[String:Any] = ["name":"local.haseebheaven.idmmac","description":"IDM Mac native browser integration","path":host.path,"type":"stdio"]
+            var manifest:[String:Any] = ["name":"local.haseebheaven.idmmac","description":"IDM native browser integration","path":host.path,"type":"stdio"]
             if path == "Mozilla" { manifest["allowed_extensions"] = ["idm-mac@haseeb-heaven"] }
             else { manifest["allowed_origins"] = ["chrome-extension://amdlggemepjploaameacboladklhlndk/"] }
             let data = try JSONSerialization.data(withJSONObject:manifest,options:[.prettyPrinted,.sortedKeys])

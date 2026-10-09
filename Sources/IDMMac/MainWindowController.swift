@@ -49,7 +49,7 @@ import CryptoKit
         }
         if storageDirectory == nil,let data = UserDefaults.standard.data(forKey: "downloadOptions"), let saved = try? JSONDecoder().decode(DownloadOptions.self, from: data) { options = saved }
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1100, height: 680), styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
-        window.appearance = interfaceAppearance.appKit;window.backgroundColor = .windowBackgroundColor;window.title = "IDM Mac"; window.center(); window.minSize = NSSize(width: 900, height: 500)
+        window.appearance = interfaceAppearance.appKit;window.backgroundColor = .windowBackgroundColor;window.title = "IDM"; window.center(); window.minSize = NSSize(width: 900, height: 500)
         super.init(window: window)
         configureMenu(); configureContent(); applyToolbarAppearance(); applyInterfaceAppearance()
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
@@ -281,9 +281,9 @@ import CryptoKit
         let menu = NSMenu()
         let appItem = NSMenuItem(); menu.addItem(appItem)
         let appMenu = NSMenu(); appItem.submenu = appMenu
-        appMenu.addItem(withTitle: "About IDM Mac", action: #selector(about), keyEquivalent: "") .target = self
+        appMenu.addItem(withTitle: "About IDM", action: #selector(about), keyEquivalent: "") .target = self
         appMenu.addItem(.separator())
-        appMenu.addItem(withTitle: "Quit IDM Mac", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        appMenu.addItem(withTitle: "Quit IDM", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         let fileItem = NSMenuItem(); menu.addItem(fileItem); fileItem.submenu = NSMenu(title: "File")
         fileItem.submenu?.addItem(withTitle: "Add URL…", action: #selector(addURL), keyEquivalent: "n").target = self
         fileItem.submenu?.addItem(withTitle: "Batch URLs…", action: #selector(batchURLs), keyEquivalent: "b").target = self
@@ -517,7 +517,7 @@ import CryptoKit
         failureRetry.isEnabled = selected?.browserSourceURL == nil && (selected?.state == .failed || selected?.state == .paused)
  if let job = selected, let error = job.error { status.stringValue = "Download failed · " + (job.url.host ?? "");status.toolTip = error;return }; if let storageError { status.stringValue = storageError; return }; status.stringValue = "\(jobs.count) downloads · \(tasks.count) active · Queue \(runningQueue ? "running" : "stopped")" }
     @objc private func filterChanged() { refresh() }
-    @objc private func about() { let a = NSAlert(); a.messageText = "IDM Mac"; a.informativeText = "Native macOS download manager. Version " + (Bundle.main.object(forInfoDictionaryKey:"CFBundleShortVersionString") as? String ?? "0.2.0") + " · macOS 13 or later. Independently implemented; feature comparisons are documented in the project."; a.runModal() }
+    @objc private func about() { let a = NSAlert(); a.messageText = "IDM"; a.informativeText = "Unofficial macOS port of Internet Download Manager (© Tonec FZE). Version " + (Bundle.main.object(forInfoDictionaryKey:"CFBundleShortVersionString") as? String ?? "0.2.1") + " · macOS 13 or later. Please support the original team at internetdownloadmanager.com."; a.runModal() }
     private func textField(_ placeholder: String, secure: Bool = false) -> NSTextField {
         let field: NSTextField = secure ? NSSecureTextField() : NSTextField(); field.placeholderString = placeholder
         field.widthAnchor.constraint(equalToConstant: 420).isActive = true; return field
