@@ -2,6 +2,7 @@
 set -eu
 cd "${0:A:h:h}"
 node --test Tests/BrowserIntegration/core.test.js
+python3 scripts/browser_test_helpers_checks.py
 scripts/swift.sh run --disable-sandbox IDMCoreChecks
 scripts/package.sh
 "build/IDM Mac.app/Contents/MacOS/IDMMac" --smoke-test "$PWD/build/ui-smoke.json"

@@ -29,23 +29,39 @@ document.getElementById('grant-session').onclick = async () => { const granted =
 ''')
     return extension
 
-def wait_file(directory, previous, timeout=45):
-    deadline = time.monotonic()+timeout
-    while time.monotonic()<deadline:
-        for path in directory.rglob('*'):
-            if path.is_file() and path not in previous and hashlib.sha256(path.read_bytes()).hexdigest() == SHA256:
-                return path
-        time.sleep(.2)
-    raise TimeoutError('No completed fixture download with expected SHA256')
+def completed_native_destinations(directory):
+    try:jobs=json.loads((directory.parent/'jobs.json').read_text())
+    except (FileNotFoundError,json.JSONDecodeError):return set()
+    return {Path(job['destination']).resolve() for job in jobs if job.get('state')=='completed'}
 
-def wait_files(directory, previous, count, timeout=45):
+def matching_final_files(directory, previous, native=True):
+    completed=completed_native_destinations(directory) if native else None
+    return [path for path in directory.rglob('*')
+            if path.is_file() and path not in previous
+            and not any(part.startswith('.idm-blob') for part in path.parts)
+            and not path.name.endswith(('.crdownload','.part'))
+            and (completed is None or path.resolve() in completed)
+            and hashlib.sha256(path.read_bytes()).hexdigest()==SHA256]
+
+def wait_file(directory, previous, timeout=45, native=True):
+    return wait_files(directory,previous,1,timeout,native)[0]
+
+def wait_files(directory, previous, count, timeout=45, native=True):
     deadline=time.monotonic()+timeout
-    while time.monotonic()<deadline:
-        matching=[p for p in directory.rglob('*') if p.is_file() and p not in previous and hashlib.sha256(p.read_bytes()).hexdigest()==SHA256]
+    while True:
+        matching=matching_final_files(directory,previous,native)
         if len(matching)==count:return matching
         if len(matching)>count:raise AssertionError('Download dedup created extra files')
+        if time.monotonic()>=deadline:raise TimeoutError('Expected '+str(count)+' completed final SHA256 files with durable native completed state')
         time.sleep(.2)
-    raise TimeoutError('Expected '+str(count)+' completed SHA256 fixture files')
+
+def wait_download_state(evaluate, ident, state, browser_api, timeout=10):
+    deadline=time.monotonic()+timeout
+    while True:
+        item=evaluate(browser_api+'.downloads.search({id:'+str(ident)+'}).then(x=>x[0])')
+        if item and item.get('state')==state:return item
+        if time.monotonic()>deadline:raise AssertionError(item)
+        time.sleep(.1)
 
 def bridge_rejections(qa):
     import socket
@@ -173,7 +189,7 @@ def run(args):
             previous=set(downloads.rglob('*'))
             captured_id=control.evaluate('chrome.downloads.download({url:'+json.dumps(fixture.url+'/capture.bin')+'})')
             captured_file=wait_file(downloads,previous)
-            captured=control.evaluate('chrome.downloads.search({id:'+str(captured_id)+'}).then(x=>x[0])')
+            captured=wait_download_state(control.evaluate,captured_id,'interrupted','chrome')
             if captured.get('state')!='interrupted' or captured.get('error')!='USER_CANCELED':raise AssertionError(captured)
             report['checks'].append({'name':'download-interception','browserState':captured,'file':str(captured_file),'sha256':SHA256})
             registration=hosts/(host_name+'.json')
@@ -181,8 +197,8 @@ def run(args):
             try:
                 previous=set(browser_downloads.rglob('*'))
                 fallback_id=control.evaluate('chrome.downloads.download({url:'+json.dumps(fixture.url+'/fallback.bin')+'})')
-                fallback_file=wait_file(browser_downloads,previous)
-                fallback=control.evaluate('chrome.downloads.search({id:'+str(fallback_id)+'}).then(x=>x[0])')
+                fallback_file=wait_file(browser_downloads,previous,native=False)
+                fallback=wait_download_state(control.evaluate,fallback_id,'complete','chrome')
                 if fallback.get('state')!='complete':raise AssertionError(fallback)
                 report['checks'].append({'name':'host-failure-resumes-browser','browserState':fallback,'file':str(fallback_file),'sha256':SHA256})
             finally:hidden.rename(registration)
@@ -204,6 +220,7 @@ def run(args):
             process.terminate()
             try: process.wait(timeout=10)
             except subprocess.TimeoutExpired: process.kill(); process.wait()
+        report['nativeCompletedJobs']=[{'filename':path.name,'state':'completed','sha256':hashlib.sha256(path.read_bytes()).hexdigest(),'bytes':path.stat().st_size} for path in sorted(completed_native_destinations(downloads)) if path.is_file()]
         (qa/'report.json').write_text(json.dumps(report,indent=2)+'\n')
     return report
 
@@ -297,7 +314,7 @@ def run_firefox(args):
             previous=set(downloads.rglob('*'))
             captured_id=driver.evaluate('browser.downloads.download({url:'+json.dumps(fixture.url+'/capture.bin')+',saveAs:false})')
             captured_file=wait_file(downloads,previous)
-            captured=driver.evaluate('browser.downloads.search({id:'+str(captured_id)+'}).then(x=>x[0])')
+            captured=wait_download_state(driver.evaluate,captured_id,'interrupted','browser')
             if captured.get('state')!='interrupted' or captured.get('error')!='USER_CANCELED':raise AssertionError(captured)
             report['checks'].append({'name':'download-interception','browserState':captured,'file':str(captured_file),'sha256':SHA256})
             hidden=manifest.with_suffix('.disabled');manifest.rename(hidden)
@@ -305,14 +322,18 @@ def run_firefox(args):
                 browser_downloads=qa/'browser-downloads'
                 previous=set(browser_downloads.rglob('*'))
                 fallback_id=driver.evaluate('browser.downloads.download({url:'+json.dumps(fixture.url+'/fallback.bin')+',saveAs:false})')
-                try:fallback_file=wait_file(browser_downloads,previous)
+                try:fallback_file=wait_file(browser_downloads,previous,native=False)
                 except TimeoutError:
                     report['fallbackDiagnostic']=driver.evaluate('browser.downloads.search({id:'+str(fallback_id)+'}).then(x=>x[0])')
                     report['extensionStatus']=driver.evaluate('IDM_QA({action:"status"})')
                     raise
-                fallback_items=driver.evaluate('browser.downloads.search({}).then(items=>items.filter(x=>x.url==='+json.dumps(fixture.url+'/fallback.bin')+'))')
-                complete=[item for item in fallback_items if item.get('state')=='complete']
-                if len(complete)!=1 or len(fallback_items)>2:raise AssertionError(fallback_items)
+                deadline=time.monotonic()+10
+                while True:
+                    fallback_items=driver.evaluate('browser.downloads.search({}).then(items=>items.filter(x=>x.url==='+json.dumps(fixture.url+'/fallback.bin')+'))')
+                    complete=[item for item in fallback_items if item.get('state')=='complete']
+                    if len(complete)==1 and len(fallback_items)<=2:break
+                    if time.monotonic()>deadline:raise AssertionError(fallback_items)
+                    time.sleep(.1)
                 original=next(item for item in fallback_items if item['id']==fallback_id)
                 report['checks'].append({'name':'host-failure-preserves-browser-download','browserState':complete[0],'originalState':original,'file':str(fallback_file),'sha256':SHA256})
             finally:hidden.rename(manifest)
@@ -327,6 +348,7 @@ def run_firefox(args):
             try:process.wait(timeout=10)
             except subprocess.TimeoutExpired:process.kill();process.wait()
         manifest.unlink(missing_ok=True)
+        report['nativeCompletedJobs']=[{'filename':path.name,'state':'completed','sha256':hashlib.sha256(path.read_bytes()).hexdigest(),'bytes':path.stat().st_size} for path in sorted(completed_native_destinations(downloads)) if path.is_file()]
         (qa/'report.json').write_text(json.dumps(report,indent=2)+'\n')
     return report
 
@@ -370,6 +392,7 @@ def run_safari(args):
         process.terminate()
         try:process.wait(timeout=10)
         except subprocess.TimeoutExpired:process.kill();process.wait()
+        report['nativeCompletedJobs']=[{'filename':path.name,'state':'completed','sha256':hashlib.sha256(path.read_bytes()).hexdigest(),'bytes':path.stat().st_size} for path in sorted(completed_native_destinations(downloads)) if path.is_file()]
         (qa/'report.json').write_text(json.dumps(report,indent=2)+'\n')
     return report
 

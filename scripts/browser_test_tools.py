@@ -2,10 +2,10 @@
 import json
 import time
 import urllib.request
-import websocket
 
 class CDP:
     def __init__(self, url):
+        import websocket
         self.ws = websocket.create_connection(url, timeout=30, suppress_origin=True)
         self.sequence = 0
     def call(self, method, params=None):
