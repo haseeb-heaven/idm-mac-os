@@ -53,9 +53,10 @@ final class HTTPChunkStream: NSObject, URLSessionDataDelegate, @unchecked Sendab
     }
     func urlSession(_ session:URLSession,task:URLSessionTask,willPerformHTTPRedirection response:HTTPURLResponse,newRequest request:URLRequest,completionHandler:@escaping @Sendable (URLRequest?) -> Void) {
         var next = request
-        if let original = task.originalRequest,let source = original.url,let target = next.url,Self.sameOrigin(source,target) {
+        if let original = task.currentRequest,let source = original.url,let target = next.url,Self.sameOrigin(source,target) {
+            next.setValue(original.value(forHTTPHeaderField:"Cookie"),forHTTPHeaderField:"Cookie")
             next.setValue(original.value(forHTTPHeaderField:"Authorization"),forHTTPHeaderField:"Authorization")
-        } else { next.setValue(nil,forHTTPHeaderField:"Authorization") }
+        } else { next.setValue(nil,forHTTPHeaderField:"Authorization"); next.setValue(nil,forHTTPHeaderField:"Cookie") }
         completionHandler(next)
     }
     func urlSession(_ session:URLSession,dataTask:URLSessionDataTask,didReceive response:URLResponse,completionHandler:@escaping @Sendable (URLSession.ResponseDisposition) -> Void) {

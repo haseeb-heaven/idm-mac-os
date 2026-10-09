@@ -1,12 +1,12 @@
 # IDM Mac
 
-**A personal, native Apple Silicon download manager informed by reverse engineering of Windows IDM.**
+**A personal, native macOS download manager informed by reverse engineering of Windows IDM.**
 
-Swift 6 · AppKit · URLSession · SQLite · Keychain · macOS 15+
+Swift 6 · AppKit · URLSession · SQLite · Keychain · macOS 13+ · Apple Silicon / Intel / Universal
 
 This is an independent project for `haseeb-heaven`, with no affiliation or endorsement from Tonec. It is not an official “IDM for Mac” release. The owner's Windows copy supplies the analysis and execution reference.
 
-![Native macOS interface during an actual integration test](docs/screenshots/idm-light-downloads.png)
+![Native macOS interface during an actual integration test](docs/screenshots/idm-classic-downloads-v020.png)
 
 ## Start here
 
@@ -15,9 +15,17 @@ This is an independent project for `haseeb-heaven`, with no affiliation or endor
 | How the macOS implementation was built | [Native port, provenance, architecture, and tools](docs/native-port.md) |
 | Original executable analysis | [GhidraMCP and Radare2 MCP findings](docs/findings/http-engine.md) |
 | Download correctness | [Real URLs, file sizes, and SHA-256 results](docs/real-url-verification.md) |
+| OpenIGI site grabbing and OS downloads | [Discovery, full-file checksums and network limits](docs/openigi-verification.md) |
 | Original IDM speed comparison | [Paired download methodology and results](docs/speed-comparison.md) |
 | Feature status and limitations | [Coverage matrix](docs/parity.md) |
+| Browser setup and compatibility | [Native messaging, extensions and browser test evidence](docs/browser-integrations.md) |
 | Regression checks and review | [Verification record](docs/verification.md) |
+
+## Download v0.2.0
+
+[Get the latest release](https://github.com/haseeb-heaven/idm-mac-os/releases/latest): choose Apple Silicon (`arm64`), Intel (`x86_64`), or Universal. Extract the ZIP and move **IDM Mac.app** to Applications. Packages are ad hoc signed and are not notarized; macOS may require approval in System Settings → Privacy & Security. Check the included `SHA256SUMS` before installation.
+
+See [macOS compatibility and executed architecture checks](docs/macos-compatibility.md), [classic toolbar design and AgentReach research](docs/design/idm-classic-v020.md), and [release notes](docs/release-notes-v0.2.0.md).
 
 ## Build and run
 
@@ -28,7 +36,9 @@ scripts/package.sh
 open "build/IDM Mac.app"
 ```
 
-Requirements: Apple Silicon Mac, macOS 15+, Swift 6 Command Line Tools, and Python 3.12 for test fixtures. The Swift package has no external dependencies. A full Xcode installation is unnecessary. `scripts/swift.sh` handles the inconsistent SwiftPM interfaces on the development Mac using a project-local public-interface copy.
+Requirements: Apple Silicon or Intel Mac, macOS 13+, Swift 6 Command Line Tools, and Python 3.12 for fixtures/build resources, and Node.js 22 for extension checks. The Swift package has no external dependencies. A full Xcode installation is unnecessary. `scripts/swift.sh` handles the inconsistent SwiftPM interfaces on the development Mac using a project-local public-interface copy.
+
+For personal installation and native host registration, run `scripts/install.sh`; it installs to `~/Applications/IDM Mac.app`. Browser extensions must then be loaded using the included setup instructions.
 
 The release bundle is locally ad hoc signed. App data is stored in `~/Library/Application Support/IDMMac/`; credentials are stored in Keychain.
 
@@ -38,10 +48,12 @@ The release bundle is locally ad hoc signed. App data is stored in `~/Library/Ap
 - Partial-file pause/resume, response validators, retries, redirects, and safe final assembly.
 - SQLite persistence and recovery after restart; Keychain Basic authentication.
 - Proxy settings, aggregate rate limits, FIFO queue, and per-job scheduled start times.
-- IDM-inspired light theme, colored toolbar, category icons, file grid, progress bars, and live details.
+- Classic IDM-style colored toolbar and labeled actions; optional compact Mac toolbar, light/dark/system appearance, searchable downloads and live details.
 - Single-page file-link grabber with deduplication and review before downloading.
+- Chromium and Firefox extensions: link/context-menu handoff, batches, direct media selection, optional cookies and automatic capture.
+- Streaming imports from live browser Blob URLs; Safari/other-browser HTTP bookmarklet handoff.
 
-Browser integration is excluded. Dynamic IDM segmentation, advanced recurring schedules, multiple named queues, recursive grabbing, FTP, and Windows-specific integrations remain unsupported or unverified. Speed measurements apply to the recorded environment and files; universal performance parity is not established.
+Dynamic IDM segmentation, advanced recurring schedules, multiple named queues, recursive grabbing, FTP, and Windows-specific integrations remain unsupported or unverified. Speed measurements apply to the recorded environment and files; universal performance parity is not established.
 
 ## Verify
 
@@ -61,7 +73,7 @@ scripts/swift.sh run --disable-sandbox -c release IDMCoreChecks --large
 
 The executable test runner is used because this Mac's Command Line Tools do not provide XCTest. It exercises real HTTP requests, file IO, SQLite, Keychain, restart behavior, and AppKit controls. Test failures return nonzero exit status. Measured coverage and its gaps are published with the results.
 
-**Recorded checks:** 47 core checks, native AppKit pause/resume and checksum checks, complete 5 GiB acceptance with an asserted 1 GiB memory ceiling, and real paired installer downloads. Latest line coverage: **96.90% core**, **81.44% UI**.
+**Previous release checks:** 47 core checks, native AppKit pause/resume and checksum checks, complete 5 GiB acceptance with an asserted 1 GiB memory ceiling, and real paired installer downloads. That release measured **96.90% core** and **81.44% UI** line coverage; see the verification record for current integration results.
 
 ## Compare with Windows IDM
 
@@ -76,13 +88,15 @@ CrossOver, the owner's IDM installer, the reference bottle, and optional MinGW-b
 
 ## Troubleshooting
 
-Select a failed job for the full error and retry controls. Browser-verification pages can reject standalone clients. Signed download URLs can expire; use a stable publisher/release URL to obtain a fresh redirect. A `blob:` URL identifies data in its originating browser environment: save it from that tab or supply an HTTP/HTTPS source URL.
+Select a failed job for the full error and retry controls. Browser-verification pages can reject standalone clients. Signed download URLs can expire; use a stable publisher/release URL to obtain a fresh redirect. A `blob:` URL identifies data in its originating browser environment: use the included extension in that live tab to import an ordinary Blob, or supply an HTTP/HTTPS source URL. Expired Blob URLs, MediaSource streams and DRM cannot be recovered from a pasted URL.
 
 ## Repository layout
 
 ```text
 Sources/IDMCore/       Native transfer, persistence, credentials, queue, and grabber
-Sources/IDMMac/        AppKit application and interface
+Sources/IDMMac/        AppKit application, bridge and interface
+Sources/IDMBrowserHost/ Swift native-messaging executable
+integrations/         Independently authored browser extensions and bookmarklet
 Tests/IDMCoreTests/   Executable functional/integration checks
 scripts/              Analysis, build, test, coverage, and benchmark tooling
 analysis/raw/         Original binary identity and actual MCP output

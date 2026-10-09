@@ -1,6 +1,6 @@
 """Deterministic loopback fixture for download-engine integration tests."""
 from http.server import ThreadingHTTPServer,BaseHTTPRequestHandler
-import re,threading,time,socket
+import re,threading,time,socket,socketserver
 from urllib.parse import urlsplit,parse_qs
 DATA=bytes(range(256))*4096
 lock=threading.Lock(); attempts={}
@@ -10,6 +10,12 @@ class Handler(BaseHTTPRequestHandler):
  def do_GET(self):self.serve(True)
  def serve(self,body):
   path=urlsplit(self.path).path
+  if path=='/browserredirect':
+   self.send_response(302);self.send_header('Location','/browserheaders');self.end_headers();return
+  if path=='/browserheaders' and (self.headers.get('Cookie')!='fixture=1' or self.headers.get('Referer')!='https://example.com/page' or self.headers.get('User-Agent')!='BrowserFixture/1'):
+   self.send_error(403);return
+  if path=='/browserleak' and (self.headers.get('Cookie') or self.headers.get('Authorization')):
+   self.send_error(403);return
   if path in ['/redirectauth','/externalredirect']:
    target='/auth' if path=='/redirectauth' else parse_qs(urlsplit(self.path).query)['target'][0]
    self.send_response(302);self.send_header('Location',target);self.end_headers();return
@@ -46,6 +52,11 @@ class Handler(BaseHTTPRequestHandler):
       size=min(65536,end-position+1);offset=position%256
       self.wfile.write(DATA[offset:offset+size])
     except (BrokenPipeError,ConnectionResetError,OSError):pass
+   return
+  if path=='/downloadpage':
+   payload=b'<a href="/download/win-x64">Windows</a><a href="/download/linux-x64">Linux</a><a href="/download/osx-arm64">macOS</a><a download href="/api/binary">Explicit</a><a href="/ordinary">Page</a><script src="/download/script"></script>'
+   self.send_response(200);self.send_header('Content-Type','text/html');self.send_header('Content-Length',str(len(payload)));self.end_headers()
+   if body:self.wfile.write(payload)
    return
   if path in ['/page','/basepage','/commentbase','/bigpage','/manylinks']:
    payload=b'<html><a href="/asset.zip">zip</a><a href="/page">page</a><a href="/asset.zip">duplicate</a><script src="javascript:x"></script></html>'
@@ -91,6 +102,12 @@ class Handler(BaseHTTPRequestHandler):
     self.wfile.write(payload[index:index+16384]);self.wfile.flush()
     if path=='/slow':time.sleep(.025)
   except (BrokenPipeError,ConnectionResetError,OSError):pass
-server=ThreadingHTTPServer(('127.0.0.1',0),Handler)
+class LoopbackHTTPServer(ThreadingHTTPServer):
+ def server_bind(self):
+  # HTTPServer normally reverse-resolves its host. Fixture loopback naming is
+  # known; keep test startup independent of the runner's external DNS settings.
+  socketserver.TCPServer.server_bind(self)
+  self.server_name='localhost';self.server_port=self.server_address[1]
+server=LoopbackHTTPServer(('127.0.0.1',0),Handler)
 print(server.server_address[1],flush=True)
 server.serve_forever()

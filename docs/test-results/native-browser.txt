@@ -1,0 +1,11 @@
+{
+  "checks": [
+    "native-ping-and-private-config",
+    "batch-filename-collision-and-checksums",
+    "duplicate-blob-begin-preserves-stream-and-durable-completion",
+    "blob-sequence-error-cleans-staging",
+    "unrecognized-extension-rejected"
+  ],
+  "passed": true,
+  "fixtureSHA256": "fbbab289f7f94b25736c58be46a994c441fd02552cc6022352e3d86d2fab7c83"
+}

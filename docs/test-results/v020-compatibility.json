@@ -1,0 +1,161 @@
+{
+  "version": "0.2.0",
+  "date": "2026-10-09",
+  "buildValidation": {
+    "version": "0.2.0",
+    "minimumMacOS": "13.0",
+    "artifacts": [
+      {
+        "filename": "IDM-Mac-0.2.0-arm64.zip",
+        "bytes": 624704,
+        "sha256": "e75a53ed97779eb219d25752dffa0be61a943883243a73bf5da69fec4da579e2",
+        "binaries": [
+          {
+            "name": "IDMMac",
+            "architectures": [
+              "arm64"
+            ],
+            "sha256": "8d70c20e468de55118cb363aad08b7de58f27a3ddd315ee1b4705eca20b176a2",
+            "minimumMacOS": [
+              "13.0"
+            ],
+            "signature": "ad hoc; strict verification passed"
+          },
+          {
+            "name": "IDMBrowserHost",
+            "architectures": [
+              "arm64"
+            ],
+            "sha256": "7a7cbbf599ccd1206a09ff61179ab9ca837528b9a316101fbfeb4273639002db",
+            "minimumMacOS": [
+              "13.0"
+            ],
+            "signature": "ad hoc; strict verification passed"
+          }
+        ]
+      },
+      {
+        "filename": "IDM-Mac-0.2.0-x86_64.zip",
+        "bytes": 664832,
+        "sha256": "b93aaf2245a138a5aadead8ea8077a3e92781daaceaab5e9d31538e1dfd13097",
+        "binaries": [
+          {
+            "name": "IDMMac",
+            "architectures": [
+              "x86_64"
+            ],
+            "sha256": "16a600df1c6ce9b069f053876be2f4b50fbf27232a53ce89212b3db1e3498c19",
+            "minimumMacOS": [
+              "13.0"
+            ],
+            "signature": "ad hoc; strict verification passed"
+          },
+          {
+            "name": "IDMBrowserHost",
+            "architectures": [
+              "x86_64"
+            ],
+            "sha256": "4b3bf71db8e42e3b94cfda7cca215de6d331d97bd98db1b3a3154a181763968f",
+            "minimumMacOS": [
+              "13.0"
+            ],
+            "signature": "ad hoc; strict verification passed"
+          }
+        ]
+      },
+      {
+        "filename": "IDM-Mac-0.2.0-universal.zip",
+        "bytes": 1266285,
+        "sha256": "54f7b7db45826cdd7509d0f03609cd4df59d9e0324f8824a1b68d3d390baa493",
+        "binaries": [
+          {
+            "name": "IDMMac",
+            "architectures": [
+              "arm64",
+              "x86_64"
+            ],
+            "sha256": "8fee2e9f9138b3ba0ed8b9fc461f762fee3f1e1f890530b58daaa0c4b6a16b51",
+            "minimumMacOS": [
+              "13.0",
+              "13.0"
+            ],
+            "signature": "ad hoc; strict verification passed"
+          },
+          {
+            "name": "IDMBrowserHost",
+            "architectures": [
+              "arm64",
+              "x86_64"
+            ],
+            "sha256": "dee4a21f8382c2a6f4215fbb93ddd979f24a415ce046e12782538e1f0b4f39bc",
+            "minimumMacOS": [
+              "13.0",
+              "13.0"
+            ],
+            "signature": "ad hoc; strict verification passed"
+          }
+        ]
+      }
+    ],
+    "runtimeValidation": "See docs/macos-compatibility.md; cross-compilation is not hardware validation."
+  },
+  "runtimeEnvironment": {
+    "hostProcessor": "Apple M2",
+    "hostOS": "macOS 15.3.1",
+    "testedBinaryArchitecture": "x86_64",
+    "execution": "Existing Rosetta translation; no physical Intel hardware used"
+  },
+  "runtimeTests": {
+    "coreChecksPassed": 58,
+    "uiSmoke": {
+      "categoryRows": 10,
+      "startupURLDelivery": true,
+      "appearancePersistenceChecked": true,
+      "height": 760,
+      "width": 1100,
+      "scheduledQuitCheck": true,
+      "toolbarAppearancesChecked": 2,
+      "toolbarItems": 11,
+      "columns": 6,
+      "minimumWidthChecked": 900,
+      "lightAndDarkChecked": true,
+      "visible": true
+    },
+    "uiEndToEnd": {
+      "browserVerificationActions": true,
+      "searchPreservesSelection": true,
+      "toolbarPauseResume": true,
+      "lightTheme": "NSAppearanceNameAqua",
+      "completedDetails": true,
+      "searchFiltering": true,
+      "actualDownloadSHA256": true
+    },
+    "nativeMessaging": {
+      "checks": [
+        "native-ping-and-private-config",
+        "batch-filename-collision-and-checksums",
+        "duplicate-blob-begin-preserves-stream-and-durable-completion",
+        "blob-sequence-error-cleans-staging",
+        "unrecognized-extension-rejected"
+      ],
+      "passed": true,
+      "fixtureSHA256": "fbbab289f7f94b25736c58be46a994c441fd02552cc6022352e3d86d2fab7c83"
+    },
+    "systemAppearanceOverrideReleased": true,
+    "appearancePersistenceChecked": true,
+    "themes": [
+      "classic light",
+      "classic dark",
+      "compact light",
+      "compact dark"
+    ]
+  },
+  "sourceTreeSHA256": "d7d94d7740a1b195595bdc31c32b3cd4f2052f1054ea27ff5ac7b67844973e14",
+  "limitations": [
+    "macOS 13 and 14 runtime execution not tested",
+    "Physical Intel Mac not tested",
+    "Ad hoc signature; Developer ID signing and notarization not performed",
+    "Safari native extension not packaged",
+    "Cross-compilation does not establish compatibility with every supported operating system"
+  ]
+}

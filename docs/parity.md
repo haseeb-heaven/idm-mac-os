@@ -15,9 +15,9 @@ This is implementation coverage, not a claim of 100% IDM equivalence.
 | Scheduler | Persistent per-job start date, app must be running | Due-time policy and SQLite round-trip pass; recurring schedules absent |
 | Storage | SQLite jobs and on-disk partial files | Restart recovery, collision, truncation, and storage failure checks pass |
 | Large files | 64-bit sizes/ranges and bounded segment files | Complete 5 GiB download and full SHA256 passed |
-| Interface | IDM-style native toolbar, category tree, list, live details | Original captured under CrossOver; native default/minimum-width smoke checks pass; exact visual parity unverified |
-| Site grabber | File links from one public page, deduplication and manual review | Link extraction check passes; recursive crawling absent |
-| Browser integration | Excluded | User-requested exclusion |
+| Interface | Classic colored/labeled AppKit toolbar, optional compact layout, light/dark/system appearance, sidebar, searchable list and live details | Original captured under CrossOver; native four appearance/layout combinations, preference restoration and minimum-width checks; see v0.2.0 compatibility evidence; exact visual parity unverified |
+| Site grabber | File links from one public page, deduplication and manual review | Extension and explicit/extensionless download-link extraction checks pass; current OpenIGI discovery and endpoint checks are recorded separately; recursive crawling absent |
+| Browser integration | Swift native messaging host, Chromium/Firefox extensions, link/batch/media selection, optional capture and cookies, Blob streaming | See [browser compatibility and executed tests](browser-integrations.md); universal parity remains unverified |
 | FTP / Windows-specific features | Not implemented | No equivalence claim |
 
 Windows IDM ran under CrossOver for layout observation. Paired full-file downloads and throughput comparisons against the original application are recorded in [speed comparison](speed-comparison.md). Full comparative testing of all features remains incomplete.
