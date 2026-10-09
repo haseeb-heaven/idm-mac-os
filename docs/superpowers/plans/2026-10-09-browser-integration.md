@@ -68,7 +68,7 @@ Files: README.md, docs/browser-integration.md, docs/parity.md, docs/verification
 - [x] Run scripts/test.sh, scripts/coverage.sh, opt-in release 5 GiB/memory assertion and browser QA.
 - [x] Review the complete change using OpenQodex; fix findings and rerun affected checks.
 - [x] Update browser support, source/native provenance and test evidence without a 100% parity claim.
-- [ ] Commit reports and push develop; verify remote commit and clean worktree; launch the packaged app.
+- [x] Commit reports and push develop; verify remote commit and clean worktree; launch the packaged app.
 
 ## User-requested follow-ups
 
