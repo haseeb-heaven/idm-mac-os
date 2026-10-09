@@ -21,12 +21,22 @@
     return store.id;
   }
   function nativeResponse(response) { if (!response || !['ready','queued','cancelled','error','accepted','complete'].includes(response.status)) throw new Error('Invalid native response'); if (response.status === 'error') throw new Error(response.message || 'Native request failed'); return response; }
-  async function capture(item, api, request) {
+  function recoveryGuard(now = () => Date.now()) {
+    const pending = new Map(); let serial = 0;
+    const key = item => JSON.stringify([item.url,Boolean(item.incognito),item.cookieStoreId || 'firefox-default']);
+    function prune() { for (const [k, entry] of pending) if (entry.expiry <= now()) pending.delete(k); }
+    return {register(item) { prune(); if (pending.size >= 32) throw new Error('Too many pending browser recoveries'); const token = ++serial; pending.set(token,{key:key(item),expiry:now()+30000}); return () => pending.delete(token); }, consume(item,extensionID) { prune(); if (item.byExtensionId !== extensionID) return false; const k=key(item); for (const [token,entry] of pending) if (entry.key === k) { pending.delete(token); return true; } return false; }, ambiguous(item) { prune(); return !item.byExtensionId && [...pending.values()].some(entry => entry.key === key(item)); }};
+  }
+  async function capture(item, api, request, recover) {
     if (!/^https?:\/\//i.test(item.url)) return 'ignored';
     await api.pause(item.id);
-    try { const response = nativeResponse(await request({url:item.url,filename:item.filename && item.filename.split(/[\\/]/).pop()})); if (response.status === 'queued') { await api.cancel(item.id); return 'queued'; } await api.resume(item.id); return response.status; }
-    catch (error) { await api.resume(item.id); throw error; }
+    async function resume() { try { await api.resume(item.id); } catch(error) { if (!recover) throw error; await recover(item,error); } }
+    let response;
+    try { response = nativeResponse(await request({url:item.url,filename:item.filename && item.filename.split(/[\\/]/).pop()})); }
+    catch(error) { try { await resume(); } catch(recoveryError) { throw new Error(`${error.message}; browser recovery failed: ${recoveryError.message}`); } throw error; }
+    if (response.status === 'queued') { await api.cancel(item.id); return 'queued'; }
+    await resume(); return response.status;
   }
-  const core = {MAX_LINKS,CHUNK_BYTES,validateLink,links,httpLinks,permissionPattern,linkAction,cookieStore,nativeResponse,capture};
+  const core = {MAX_LINKS,CHUNK_BYTES,validateLink,links,httpLinks,permissionPattern,linkAction,cookieStore,nativeResponse,recoveryGuard,capture};
   root.IDMCore = core; if (typeof module !== 'undefined') module.exports = core;
 })(globalThis);

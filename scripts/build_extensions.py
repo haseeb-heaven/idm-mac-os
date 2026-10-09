@@ -13,8 +13,12 @@ a.output.mkdir(parents=True, exist_ok=True)
 for browser in ('chromium', 'firefox'):
     dest = a.output / browser
     dest.mkdir(parents=True, exist_ok=True)
+    # Remove legacy locally staged diagnostics before creating production resources.
+    for diagnostic in ('qa.js','qa.html'):
+        (dest / diagnostic).unlink(missing_ok=True)
     for source in (ROOT / 'integrations/shared').iterdir():
-        if source.is_file(): shutil.copy2(source, dest / source.name)
+        if source.name in ('background.js','core.js','popup.html','popup.js'):
+            shutil.copy2(source, dest / source.name)
     (dest / 'config.js').write_text('globalThis.IDM_CONFIG = ' + json.dumps({'hostName':host}) + ';\n')
     manifest = {'manifest_version':3 if browser == 'chromium' else 2, 'name':'IDM Mac Browser Integration', 'version':'1.0.0', 'description':'Reviewed native download handoff and browser Blob imports.', 'permissions':['nativeMessaging','downloads','storage','contextMenus','activeTab'], 'optional_permissions':['cookies']}
     if browser == 'chromium':

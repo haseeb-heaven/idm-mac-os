@@ -71,5 +71,40 @@ async function handle(message,sender) {
 }
 api.runtime.onMessage.addListener((message,sender,sendResponse) => { const task = handle(message,sender).catch(e => { report(e.message); return {error:e.message}; }); if (globalThis.browser) return task; task.then(sendResponse); return true; });
 api.runtime.onInstalled.addListener(() => { for (const [id,title,contexts] of [['link','Download link',['link']],['selection','Download selected links',['selection']],['all','Download all links',['page']],['media','Choose direct video/audio files',['video','audio','page']]]) api.contextMenus.create({id,title,contexts}); });
-api.contextMenus.onClicked.addListener(async (info,tab) => { try { if (info.menuItemId === 'link') { if (IDMCore.linkAction(info.linkUrl) === 'blob') await blob(tab,info.linkUrl,'browser-import.bin'); else await download([{url:info.linkUrl}],tab); } else { const items = await collect(tab,info.menuItemId); await download(items,tab); } } catch(e) { report(e.message); } });
-api.downloads.onCreated.addListener(async item => { if (!(await settings()).capture) return; try { await IDMCore.capture(item,api.downloads,link => download([link],null)); } catch(e) { report(e.message); } });
+async function contextMenuClicked(info,tab) {
+  try {
+    if (info.menuItemId === 'media') {
+      // Keep the originating tab when the selector becomes the active tab.
+      await api.tabs.create({url:api.runtime.getURL('popup.html') + '?media=1&tabID=' + tab.id});
+    } else if (info.menuItemId === 'link') {
+      if (IDMCore.linkAction(info.linkUrl) === 'blob') await blob(tab,info.linkUrl,'browser-import.bin');
+      else await download([{url:info.linkUrl}],tab);
+    } else await download(await collect(tab,info.menuItemId),tab);
+  } catch(e) { report(e.message); }
+}
+api.contextMenus.onClicked.addListener(contextMenuClicked);
+const browserRecoveries = IDMCore.recoveryGuard();
+async function recoverBrowserDownload(item) {
+  // Browser downloads API can recreate HTTP GET transfers; POST bodies are unavailable.
+  const release = browserRecoveries.register(item);
+  const options = {url:item.url,conflictAction:'uniquify',saveAs:false,incognito:Boolean(item.incognito)};
+  const filename = item.filename?.split(/[\\/]/).pop(); if (filename) options.filename = IDMCore.validateLink({url:item.url,filename}).filename.replace(/^\.+|\.+$/g,'') || 'browser-download';
+  if (item.cookieStoreId && item.cookieStoreId !== 'firefox-default') options.cookieStoreId = item.cookieStoreId;
+  try { await api.downloads.download(options); }
+  catch(error) { release(); throw error; }
+  // Keep the source until the browser has accepted its replacement.
+  await api.downloads.cancel(item.id).catch(() => {});
+}
+api.downloads.onCreated.addListener(async item => {
+  if (browserRecoveries.consume(item,api.runtime.id)) return;
+  // Older browsers may omit extension provenance. Leave a matching transfer alone
+  // without consuming the marker rather than risking recursive interception.
+  if (browserRecoveries.ambiguous(item)) return;
+  if (!(await settings()).capture) return;
+  try {
+    if (globalThis.browser && item.cookieStoreId && item.cookieStoreId !== 'firefox-default' && !await api.permissions.contains({permissions:['cookies']})) {
+      report('Automatic capture skipped: cookie permission is required to preserve this browser container'); return;
+    }
+    await IDMCore.capture(item,api.downloads,link => download([link],null),globalThis.browser ? recoverBrowserDownload : undefined);
+  } catch(error) { report(error.message); }
+});
