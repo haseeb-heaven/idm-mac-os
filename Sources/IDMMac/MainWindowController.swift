@@ -73,7 +73,7 @@ import CryptoKit
     func browserImportFinished(id:UUID,error:Error?) throws {
         guard let index = jobs.firstIndex(where:{$0.id == id}) else { throw BrowserProtocolError.invalid }
         jobs[index].state = error == nil ? .completed : error is CancellationError ? .paused : .failed
-        jobs[index].error = error?.localizedDescription
+        jobs[index].error = error is CancellationError ? "Browser import stopped. Import again from its original tab." : error?.localizedDescription
         guard persist() else { refresh(); throw DownloadError.storage(storageError ?? "Cannot save browser import") }
         refresh(); pumpQueue()
     }

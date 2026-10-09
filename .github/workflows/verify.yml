@@ -1,0 +1,30 @@
+name: macOS verification
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  native:
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - name: Core, extensions, release package and native end-to-end checks
+        run: scripts/test.sh
+      - name: Verify packaged signatures
+        run: |
+          codesign --verify --strict 'build/IDM Mac.app'
+          codesign --verify --strict 'build/IDM Mac.app/Contents/MacOS/IDMBrowserHost'

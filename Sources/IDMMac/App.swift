@@ -3,6 +3,10 @@ import IDMCore
 import Darwin
 @main struct IDMMac {
     @MainActor static func main() {
+        if ProcessInfo.processInfo.arguments.contains("--register-browsers") {
+            do { try BrowserRegistration.install(app:Bundle.main.bundleURL); print("Registered native browser hosts"); return }
+            catch { FileHandle.standardError.write(Data(error.localizedDescription.utf8)); exit(1) }
+        }
         let app = NSApplication.shared
         let delegate = AppDelegate()
         app.appearance = NSAppearance(named:.aqua)

@@ -43,7 +43,7 @@ async function blobReader(url,streamID) {
   const send = message => api.runtime.sendMessage({action:'blobData',streamID,...message});
   let reader;
   try { const response = await fetch(url); if (!response.ok || !response.body) throw new Error('Blob cannot be read (expired, MediaSource or protected media)'); reader = response.body.getReader(); let sequence = 0,totalBytes = 0; for (;;) { const {done,value} = await reader.read(); if (done) break; for (let offset = 0; offset < value.length; offset += 131072) { const chunk = value.subarray(offset,offset+131072); let binary = ''; for (const byte of chunk) binary += String.fromCharCode(byte); const ack = await send({op:'blobChunk',sequence:sequence++,data:btoa(binary)}); if (ack.error) throw new Error(ack.error); totalBytes += chunk.length; } } const ack = await send({op:'blobFinish',totalBytes}); if (ack.error) throw new Error(ack.error); return ack; }
-  catch(e) { await send({op:'blobAbort'}).catch(() => {}); throw new Error(`Browser Blob import failed: ${e.message}`); }
+  catch(e) { await send({op:'blobAbort'}).catch(() => {}); return {error:`Browser Blob import failed: ${e.message}`}; }
   finally { await reader?.cancel().catch(() => {}); }
 }
 async function blob(tab,url,filename) {
@@ -54,7 +54,7 @@ async function blob(tab,url,filename) {
   port.onDisconnect.addListener(() => { if (pending) { clearTimeout(pending.timer); pending.reject(new Error('Native host disconnected during Blob import')); pending = null; } });
   const request = message => new Promise((resolve,reject) => { const id = crypto.randomUUID(); pending = {id,resolve,reject,timer:setTimeout(() => { pending = null; reject(new Error('Blob response timed out')); },120000)}; port.postMessage({id,...message}); });
   const streamID = crypto.randomUUID(); blobSession = {tabID:tab.id,streamID,request};
-  try { const accepted = await request({op:'blobBegin',streamID,links:[{url,filename:filename || 'browser-import.bin',pageURL:tab.url}]}); if (accepted.status !== 'accepted') return accepted; const result = await inject(tab.id,blobReader,[url,streamID]); report(result.status || 'complete'); return result; }
+  try { const accepted = await request({op:'blobBegin',streamID,links:[{url,filename:filename || 'browser-import.bin',pageURL:tab.url}]}); if (accepted.status !== 'accepted') return accepted; const result = await inject(tab.id,blobReader,[url,streamID]); if (!result) throw new Error('Source tab closed or Blob unavailable'); if (result.error) throw new Error(result.error); report(result.status || 'complete'); return result; }
   catch(e) { await request({op:'blobAbort',streamID}).catch(() => {}); throw e; }
   finally { blobSession = null; port.disconnect(); }
 }

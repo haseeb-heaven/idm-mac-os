@@ -31,6 +31,13 @@ PLIST
 xattr -cr "$app"
 xattr -d com.apple.FinderInfo "$app" 2>/dev/null || true
 codesign --force --sign - "$app/Contents/MacOS/IDMBrowserHost"
-codesign --force --sign - "$app"
+# Documents FileProvider can reattach Finder metadata while a bundle is written.
+for signing_attempt in 1 2 3; do
+  xattr -cr "$app"
+  xattr -d com.apple.FinderInfo "$app" 2>/dev/null || true
+  if codesign --force --sign - "$app"; then break; fi
+  [[ "$signing_attempt" -lt 3 ]] || exit 1
+done
+xattr -cr "$app"
 codesign --verify --strict "$app"
 print "Built $app"
