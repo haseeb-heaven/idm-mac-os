@@ -42,6 +42,7 @@ import CryptoKit
         }
     }
 
+    func browserDestinationIsOccupied(_ url:URL) -> Bool { jobs.contains(where:{$0.destination == url}) || FileManager.default.fileExists(atPath:url.path) }
     func queueBrowserDownload(link:BrowserLink,destination:URL) throws -> UUID {
         try queueBrowserDownloads(links:[link],destinations:[destination])[0]
     }
@@ -69,7 +70,13 @@ import CryptoKit
         try store.save(jobs + [job]); jobs.append(job); writeBrowserQAReport(); refresh(); return job.id
     }
     func browserImportProgress(id:UUID,received:Int64,total:Int64) { update(id,TransferProgress(received:received,total:total)); writeBrowserQAReport() }
-    func browserImportFinished(id:UUID,error:Error?) { finished(id,error:error) }
+    func browserImportFinished(id:UUID,error:Error?) throws {
+        guard let index = jobs.firstIndex(where:{$0.id == id}) else { throw BrowserProtocolError.invalid }
+        jobs[index].state = error == nil ? .completed : error is CancellationError ? .paused : .failed
+        jobs[index].error = error?.localizedDescription
+        guard persist() else { refresh(); throw DownloadError.storage(storageError ?? "Cannot save browser import") }
+        refresh(); pumpQueue()
+    }
     private func writeBrowserQAReport() {
         guard let browserQAReportURL else { return }
         let report = jobs.map { ["id":$0.id.uuidString,"state":$0.state.rawValue,"destination":$0.destination.path,"receivedBytes":$0.receivedBytes,"totalBytes":$0.totalBytes] as [String:Any] }

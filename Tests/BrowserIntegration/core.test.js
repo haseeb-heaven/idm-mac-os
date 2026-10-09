@@ -5,3 +5,6 @@ test('capture ignores browser local files',async()=>assert.equal(await core.capt
 test('native response errors are visible',()=> { assert.throws(()=>core.nativeResponse({status:'error',message:'Host missing'}),/Host missing/); assert.throws(()=>core.nativeResponse({status:'wrong'})); });
 
 test('batch deduplication preserves first filename and source page',()=> { const result = core.links([{url:'https://a.test/f',filename:'first',pageURL:'https://a.test/page'},{url:'https://a.test/f',filename:'second'}]); assert.deepEqual(result,[{url:'https://a.test/f',filename:'first',pageURL:'https://a.test/page'}]); });
+
+test('mixed HTTP and Blob collections retain HTTP batch',()=>assert.deepEqual(core.httpLinks([{url:'blob:https://a.test/id'},{url:'https://a.test/f'}]),[{url:'https://a.test/f'}]));
+test('site permission patterns omit TCP port',()=> {assert.equal(core.permissionPattern('http://127.0.0.1:5432/path'),'http://127.0.0.1/*'); assert.equal(core.permissionPattern('https://example.com:8443/f'),'https://example.com/*');});

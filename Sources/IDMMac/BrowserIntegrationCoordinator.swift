@@ -14,9 +14,9 @@ import IDMCore
         self.controller = controller; self.configurationURL = configurationURL; self.qaDirectory = qaDirectory
     }
     func start() throws {
-        let server = BrowserBridgeServer(configurationURL: configurationURL) { [weak self] request in
+        let server = BrowserBridgeServer(configurationURL: configurationURL) { [weak self] request, deadline, isActive in
             guard let self else { return BrowserResponse(id: request.id, status: "error", message: "Application is closing") }
-            return self.handle(request)
+            return self.handle(request, deadline: deadline, isActive: isActive)
         }
         self.server = server; try server.start()
         cleanup = Task { @MainActor [weak self] in
@@ -33,7 +33,7 @@ import IDMCore
     func abort(jobID: UUID) { for (key, value) in Array(imports) where value.jobID == jobID { abortStream(key, error: CancellationError()) } }
     private func abortStream(_ key: String, error: Error?) {
         guard let value = imports.removeValue(forKey: key) else { return }
-        blobs.abort(id: value.storeID); controller?.browserImportFinished(id: value.jobID, error: error)
+        blobs.abort(id: value.storeID); try? controller?.browserImportFinished(id: value.jobID, error: error)
     }
     private func destination(_ link: BrowserLink, directory: URL? = nil) -> URL? {
         let filename = link.filename ?? link.httpURL.map(DownloadFilename.from) ?? "browser-import.bin"
@@ -50,10 +50,9 @@ import IDMCore
         try? FileManager.default.createDirectory(at: downloads, withIntermediateDirectories: true)
         return downloads
     }
-    private func handle(_ request: BrowserRequest, allowQA: Bool = true) -> BrowserResponse {
-        let started = Date()
+    private func handle(_ request: BrowserRequest, allowQA: Bool = true, deadline: Date = Date().addingTimeInterval(110), isActive: @MainActor () -> Bool = { true }) -> BrowserResponse {
         do {
-            try request.validate(); guard let controller else { throw BrowserProtocolError.invalid }
+            try request.validate(); guard Date() < deadline, isActive() else { throw BrowserProtocolError.invalid }; guard let controller else { throw BrowserProtocolError.invalid }
             switch request.op {
             case .ping: return BrowserResponse(id: request.id, status: "ready")
             case .download, .batch:
@@ -63,27 +62,27 @@ import IDMCore
                     guard panel.runModal() == .OK else { return BrowserResponse(id: request.id, status: "cancelled") }; directory = panel.url
                 }
                 var destinations: [URL] = []
-                let automated = allowQA && qaDestination(links) != nil
+                let chooseUnique = directory != nil
                 var chosen = Set<String>()
                 for link in links {
                     guard var path = destination(link, directory: directory) else { return BrowserResponse(id: request.id, status: "cancelled") }
-                    if automated {
+                    if chooseUnique {
                         let original = path; var suffix = 1
-                        while FileManager.default.fileExists(atPath: path.path) || chosen.contains(path.path) {
+                        while controller.browserDestinationIsOccupied(path) || chosen.contains(path.path) {
                             path = original.deletingLastPathComponent().appendingPathComponent("\(original.deletingPathExtension().lastPathComponent)-\(suffix)").appendingPathExtension(original.pathExtension); suffix += 1
                         }
                     }
-                    guard !FileManager.default.fileExists(atPath: path.path), chosen.insert(path.path).inserted else { throw DownloadError.destinationExists }
+                    guard !controller.browserDestinationIsOccupied(path), chosen.insert(path.path).inserted else { throw DownloadError.destinationExists }
                     destinations.append(path)
                 }
-                guard Date().timeIntervalSince(started) < 110 else { throw BrowserProtocolError.invalid }
+                guard Date() < deadline, isActive() else { throw BrowserProtocolError.invalid }
                 let jobs = try controller.queueBrowserDownloads(links: links, destinations: destinations)
                 return BrowserResponse(id: request.id, status: "queued", jobID: jobs.first?.uuidString)
             case .blobBegin:
                 guard let stream = request.streamID, UUID(uuidString: stream) != nil, imports[stream] == nil, imports.count < 4 else { throw BrowserProtocolError.invalid }
                 let link = request.links![0]
                 guard let path = destination(link, directory: allowQA ? qaDestination([link]) : nil) else { return BrowserResponse(id: request.id, status: "cancelled") }
-                guard Date().timeIntervalSince(started) < 110 else { throw BrowserProtocolError.invalid }
+                guard Date() < deadline, isActive() else { throw BrowserProtocolError.invalid }
                 let storeID = try blobs.begin(destination: path, expectedBytes: request.totalBytes)
                 do {
                     let jobID = try controller.beginBrowserImport(link: link, destination: path)
@@ -100,14 +99,14 @@ import IDMCore
                 let stream = request.streamID!; guard let value = imports[stream], let total = request.totalBytes else { throw BrowserProtocolError.invalid }
                 let result = try blobs.finish(id: value.storeID, expectedBytes: total); imports.removeValue(forKey: stream)
                 controller.browserImportProgress(id: value.jobID, received: result.bytes, total: result.bytes)
-                controller.browserImportFinished(id: value.jobID, error: nil)
+                try controller.browserImportFinished(id: value.jobID, error: nil)
                 return BrowserResponse(id: request.id, status: "complete", jobID: value.jobID.uuidString, streamID: stream, sha256: result.sha256)
             case .blobAbort:
                 abortStream(request.streamID!, error: CancellationError())
                 return BrowserResponse(id: request.id, status: "cancelled", streamID: request.streamID)
             }
         } catch {
-            if let stream = request.streamID { abortStream(stream, error: error) }
+            if (request.op == .blobChunk || request.op == .blobFinish), let stream = request.streamID { abortStream(stream, error: error) }
             return BrowserResponse(id: request.id, status: "error", message: error.localizedDescription)
         }
     }

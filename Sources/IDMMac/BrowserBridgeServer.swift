@@ -6,11 +6,11 @@ import IDMCore
 
 @MainActor final class BrowserBridgeServer {
     private let configurationURL: URL
-    private let handler: @MainActor (BrowserRequest) async -> BrowserResponse
+    private let handler: @MainActor (BrowserRequest, Date, @MainActor () -> Bool) async -> BrowserResponse
     private var listener: NWListener?
     private var clients: [UUID: NWConnection] = [:]
     private var token = ""
-    init(configurationURL: URL, handler: @escaping @MainActor (BrowserRequest) async -> BrowserResponse) {
+    init(configurationURL: URL, handler: @escaping @MainActor (BrowserRequest, Date, @MainActor () -> Bool) async -> BrowserResponse) {
         self.configurationURL = configurationURL; self.handler = handler
     }
     func start() throws {
@@ -41,21 +41,27 @@ import IDMCore
             }
         }
         server.newConnectionHandler = { [weak self] connection in
+            let deadline = Date().addingTimeInterval(110)
             Task { @MainActor in
-                guard let self, self.clients.count < 16 else { connection.cancel(); return }
+                guard let self, self.clients.count < 16, Date() < deadline else { connection.cancel(); return }
                 let id = UUID(); self.clients[id] = connection
+                connection.stateUpdateHandler = { [weak self] state in
+                    let closed: Bool
+                    switch state { case .failed, .cancelled: closed = true; default: closed = false }
+                    if closed { Task { @MainActor [weak self] in self?.close(id) } }
+                }
                 connection.start(queue: .main)
-                self.receive(connection, id: id, buffer: Data())
+                self.receive(connection, id: id, deadline: deadline, buffer: Data())
                 Task { @MainActor [weak self] in
-                    try? await Task.sleep(for: .seconds(150))
+                    try? await Task.sleep(for: .seconds(110))
                     self?.close(id)
                 }
             }
         }
-        server.start(queue: .main)
+        server.start(queue: DispatchQueue(label: "idm-browser-listener"))
     }
     private func close(_ id: UUID) { clients.removeValue(forKey: id)?.cancel() }
-    private func receive(_ connection: NWConnection, id: UUID, buffer: Data) {
+    private func receive(_ connection: NWConnection, id: UUID, deadline: Date, buffer: Data) {
         connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { [weak self] data, _, complete, error in
             Task { @MainActor in
                 guard let self, self.clients[id] != nil else { return }
@@ -67,13 +73,25 @@ import IDMCore
                         let envelope = try JSONDecoder().decode(BrowserEnvelope.self, from: frame)
                         guard self.matchesToken(envelope.token) else { throw BrowserProtocolError.invalid }
                         try envelope.request.validate()
-                        let response = await self.handler(envelope.request)
+                        // Each host TCP connection carries one request. Keep a receive pending so
+                        // browser/host cancellation invalidates approval before persistence.
+                        connection.receive(minimumIncompleteLength: 1, maximumLength: 1) { [weak self] _, _, _, _ in
+                            Task { @MainActor in self?.close(id) }
+                        }
+                        let active: @MainActor () -> Bool = { [weak self, weak connection] in
+                            guard let self, let connection, self.clients[id] != nil, Date() < deadline else { return false }
+                            if case .ready = connection.state { return true }
+                            return false
+                        }
+                        guard active() else { self.close(id); return }
+                        let response = await self.handler(envelope.request, deadline, active)
+                        guard active() else { self.close(id); return }
                         let encoded = try NativeMessageFrame.encode(JSONEncoder().encode(response))
                         connection.send(content: encoded, completion: .contentProcessed { _ in
                             Task { @MainActor [weak self] in self?.close(id) }
                         })
                     } else if complete || error != nil { self.close(id) }
-                    else { self.receive(connection, id: id, buffer: received) }
+                    else { self.receive(connection, id: id, deadline: deadline, buffer: received) }
                 } catch { self.close(id) }
             }
         }

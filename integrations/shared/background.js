@@ -16,7 +16,7 @@ function nativeRequest(request) {
 async function sessionLink(link, tab) {
   const result = IDMCore.validateLink({...link,pageURL:tab?.url || link.pageURL});
   if ((await settings()).session) {
-    const origin = new URL(result.url).origin + '/*';
+    const origin = IDMCore.permissionPattern(result.url);
     if (!await api.permissions.contains({permissions:['cookies'],origins:[origin]})) throw new Error('Allow cookie and site access using the popup first');
     const details = {url:result.url}; if (tab?.cookieStoreId) details.storeId = tab.cookieStoreId;
     const cookies = await api.cookies.getAll(details);
@@ -26,7 +26,7 @@ async function sessionLink(link, tab) {
   }
   return result;
 }
-async function download(links,tab) { const clean = IDMCore.links(links); if (!clean.length) throw new Error('No HTTP or HTTPS links found'); const enriched = await Promise.all(clean.map(l => sessionLink(l,tab))); const response = await nativeRequest({id:crypto.randomUUID(),op:enriched.length === 1 ? 'download':'batch',links:enriched}); report(response.message || response.status); return response; }
+async function download(links,tab) { const clean = IDMCore.httpLinks(links); if (!clean.length) throw new Error('No HTTP or HTTPS links found'); const enriched = await Promise.all(clean.map(l => sessionLink(l,tab))); const response = await nativeRequest({id:crypto.randomUUID(),op:enriched.length === 1 ? 'download':'batch',links:enriched}); report(response.message || response.status); return response; }
 function collectDocument(kind) {
   const selection = getSelection();
   const nodes = kind === 'media' ? [...document.querySelectorAll('video,audio,video source,audio source')] : [...document.querySelectorAll('a[href]')].filter(a => kind !== 'selection' || (selection && [...Array(selection.rangeCount)].some((_,i) => selection.getRangeAt(i).intersectsNode(a))));
@@ -70,5 +70,5 @@ async function handle(message,sender) {
 }
 api.runtime.onMessage.addListener((message,sender,sendResponse) => { const task = handle(message,sender).catch(e => { report(e.message); return {error:e.message}; }); if (globalThis.browser) return task; task.then(sendResponse); return true; });
 api.runtime.onInstalled.addListener(() => { for (const [id,title,contexts] of [['link','Download link',['link']],['selection','Download selected links',['selection']],['all','Download all links',['page']],['media','Choose direct video/audio files',['video','audio','page']]]) api.contextMenus.create({id,title,contexts}); });
-api.contextMenus.onClicked.addListener(async (info,tab) => { try { if (info.menuItemId === 'link') await download([{url:info.linkUrl}],tab); else { const items = await collect(tab,info.menuItemId); if (items.some(l => l.url.startsWith('blob:'))) throw new Error('Use the popup to choose the browser Blob file'); await download(items,tab); } } catch(e) { report(e.message); } });
+api.contextMenus.onClicked.addListener(async (info,tab) => { try { if (info.menuItemId === 'link') await download([{url:info.linkUrl}],tab); else { const items = await collect(tab,info.menuItemId); await download(items,tab); } } catch(e) { report(e.message); } });
 api.downloads.onCreated.addListener(async item => { if (!(await settings()).capture) return; try { await IDMCore.capture(item,api.downloads,link => download([link],null)); } catch(e) { report(e.message); } });

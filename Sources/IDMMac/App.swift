@@ -1,5 +1,6 @@
 import AppKit
 import IDMCore
+import Darwin
 @main struct IDMMac {
     @MainActor static func main() {
         let app = NSApplication.shared
@@ -14,6 +15,7 @@ import IDMCore
 }
 @MainActor final class AppDelegate: NSObject, NSApplicationDelegate {
     var controller: MainWindowController?
+    private var qaTermination: DispatchSourceSignal?
     func applicationDidFinishLaunching(_ notification: Notification) { start() }
     func start() {
         guard controller == nil else { return }
@@ -24,7 +26,12 @@ import IDMCore
             let storage = qa ?? (smoke ?? e2e).map { _ in FileManager.default.temporaryDirectory.appendingPathComponent("idm-ui-smoke-\(UUID())") }
             controller = try MainWindowController(storageDirectory:storage); controller?.showWindow(nil); NSApp.activate(ignoringOtherApps:true)
             if smoke == nil && e2e == nil, let controller {
-                if let qa { controller.browserQAReportURL = qa.appendingPathComponent("jobs.json") }
+                if let qa {
+                    controller.browserQAReportURL = qa.appendingPathComponent("jobs.json")
+                    Darwin.signal(SIGTERM,SIG_IGN)
+                    let source = DispatchSource.makeSignalSource(signal:SIGTERM,queue:.main)
+                    source.setEventHandler { Task { @MainActor in NSApp.terminate(nil) } }; source.resume(); qaTermination = source
+                }
                 let bridge = BrowserIntegrationCoordinator(controller:controller,configurationURL:qa?.appendingPathComponent("browser-bridge.json") ?? BrowserBridgeConfiguration.defaultURL,qaDirectory:qa)
                 controller.browserIntegration = bridge; try bridge.start()
             }
