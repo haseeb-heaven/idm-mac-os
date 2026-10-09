@@ -1,0 +1,9 @@
+{
+  "lightTheme" : "NSAppearanceNameAqua",
+  "completedDetails" : true,
+  "searchFiltering" : true,
+  "searchPreservesSelection" : true,
+  "toolbarPauseResume" : true,
+  "actualDownloadSHA256" : true,
+  "browserVerificationActions" : true
+}

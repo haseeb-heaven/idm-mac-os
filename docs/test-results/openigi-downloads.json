@@ -1,0 +1,118 @@
+{
+  "page": "https://openigi.com/",
+  "dateUTC": "2026-10-09T16:29:18.720995+00:00",
+  "checks": [
+    {
+      "os": "win-x64",
+      "url": "https://api.openigi.com/download/win-x64",
+      "nativeExit": 0,
+      "native": {
+        "bytes": 44723616,
+        "chunkBytes": 1048576,
+        "connections": 4,
+        "engineAttempts": 1,
+        "engineURL": "https://api.openigi.com/download/win-x64",
+        "grabberLinks": [
+          "https://api.openigi.com/download/win-x64"
+        ],
+        "interruptions": [],
+        "magicHex": "4d5a9000",
+        "nativeEngine": true,
+        "os": "win-x64",
+        "page": "https://openigi.com/",
+        "seconds": 307.4042090177536,
+        "sha256": "e7d517df4cde1d5f0e350e2486d42af4e668b9e5df9e6649510a2ac3ed471609",
+        "url": "https://api.openigi.com/download/win-x64",
+        "useRanges": true
+      },
+      "curl": {
+        "exit": 0,
+        "bytes": 44723616,
+        "sha256": "e7d517df4cde1d5f0e350e2486d42af4e668b9e5df9e6649510a2ac3ed471609",
+        "seconds": 122.56770829192828,
+        "method": "independent curl HTTP/1.1 ordered one-MiB ranges",
+        "connections": 8,
+        "finalURL": "https://dl.openigi.com/releases/launcher-0.4.1/openigi-launcher-0.4.1-win-x64.exe",
+        "requestAttempts": 43,
+        "ranges": 43,
+        "transportExitCodes": []
+      },
+      "match": true
+    },
+    {
+      "os": "linux-x64",
+      "url": "https://api.openigi.com/download/linux-x64",
+      "nativeExit": 0,
+      "reusedNativeEvidence": true,
+      "native": {
+        "bytes": 45382292,
+        "grabberLinks": [
+          "https://api.openigi.com/download/win-x64",
+          "https://api.openigi.com/download/linux-x64",
+          "https://api.openigi.com/download/osx-arm64"
+        ],
+        "nativeEngine": true,
+        "os": "linux-x64",
+        "page": "https://openigi.com/",
+        "seconds": 305.62569093704224,
+        "sha256": "c44fc18db8e154cdeab0246ad5297b0cd9fa2e1d7a8c72860ee739ff30183df0",
+        "url": "https://api.openigi.com/download/linux-x64"
+      },
+      "curl": {
+        "exit": 0,
+        "bytes": 45382292,
+        "sha256": "c44fc18db8e154cdeab0246ad5297b0cd9fa2e1d7a8c72860ee739ff30183df0",
+        "seconds": 15.076346874935552,
+        "method": "independent curl HTTP/1.1 ordered one-MiB ranges",
+        "connections": 8,
+        "finalURL": "https://dl.openigi.com/releases/launcher-0.4.1/openigi-launcher-0.4.1-linux-x64",
+        "requestAttempts": 44,
+        "ranges": 44,
+        "transportExitCodes": []
+      },
+      "match": true
+    },
+    {
+      "os": "osx-arm64",
+      "url": "https://api.openigi.com/download/osx-arm64",
+      "nativeExit": 0,
+      "reusedNativeEvidence": true,
+      "native": {
+        "bytes": 41496743,
+        "chunkBytes": 1048576,
+        "connections": 4,
+        "engineAttempts": 2,
+        "engineURL": "https://api.openigi.com/download/osx-arm64",
+        "grabberLinks": [
+          "https://api.openigi.com/download/win-x64",
+          "https://api.openigi.com/download/linux-x64",
+          "https://api.openigi.com/download/osx-arm64"
+        ],
+        "interruptions": [
+          "The request timed out."
+        ],
+        "nativeEngine": true,
+        "os": "osx-arm64",
+        "page": "https://openigi.com/",
+        "seconds": 377.7282940149307,
+        "sha256": "5c5e226d6c58fdfee35354333f8f1ffd14271ac604729b5933140c9a7d82879f",
+        "url": "https://api.openigi.com/download/osx-arm64",
+        "useRanges": true
+      },
+      "curl": {
+        "exit": 0,
+        "bytes": 41496743,
+        "sha256": "5c5e226d6c58fdfee35354333f8f1ffd14271ac604729b5933140c9a7d82879f",
+        "seconds": 14.987161958008073,
+        "method": "independent curl HTTP/1.1 ordered one-MiB ranges",
+        "connections": 8,
+        "finalURL": "https://dl.openigi.com/releases/launcher-0.4.1/openigi-launcher-0.4.1-osx-arm64.tar.gz",
+        "requestAttempts": 40,
+        "ranges": 40,
+        "transportExitCodes": []
+      },
+      "match": true
+    }
+  ],
+  "passed": true
+}
