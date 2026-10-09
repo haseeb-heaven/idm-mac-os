@@ -4,6 +4,8 @@ import UniformTypeIdentifiers
 import CryptoKit
 
 @MainActor final class MainWindowController: NSWindowController, NSTableViewDataSource, NSTableViewDelegate, NSOutlineViewDataSource, NSOutlineViewDelegate, NSToolbarDelegate, NSToolbarItemValidation {
+    var browserIntegration: BrowserIntegrationCoordinator?
+    var browserQAReportURL: URL?
     private let store: JobStore
     private let engine: DownloadEngine
     private var jobs: [DownloadJob]
@@ -38,6 +40,50 @@ import CryptoKit
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.pumpQueue(); self?.updateStatus() }
         }
+    }
+
+    func queueBrowserDownload(link:BrowserLink,destination:URL) throws -> UUID {
+        try queueBrowserDownloads(links:[link],destinations:[destination])[0]
+    }
+    func queueBrowserDownloads(links:[BrowserLink],destinations:[URL]) throws -> [UUID] {
+        guard !links.isEmpty, links.count == destinations.count, Set(destinations).count == destinations.count else { throw BrowserProtocolError.invalid }
+        var additions:[DownloadJob] = []
+        do {
+            for (link,destination) in zip(links,destinations) {
+                try link.validate()
+                guard !jobs.contains(where:{$0.destination == destination}), !FileManager.default.fileExists(atPath:destination.path) else { throw DownloadError.destinationExists }
+                let job = try DownloadJob(url:URL(string:link.url)!,destination:destination)
+                additions.append(job)
+                try CredentialStore.saveHeaders(link.headers ?? [:],jobID:job.id)
+            }
+            try store.save(jobs + additions)
+        } catch { for job in additions { try? CredentialStore.deleteHeaders(jobID:job.id) }; throw error }
+        jobs += additions; writeBrowserQAReport(); refresh(); pumpQueue(); return additions.map(\.id)
+    }
+    func beginBrowserImport(link:BrowserLink,destination:URL) throws -> UUID {
+        try link.validate(allowBlob:true)
+        guard !jobs.contains(where:{$0.destination == destination}) else { throw DownloadError.destinationExists }
+        guard link.url.hasPrefix("blob:"), let page = link.pageURL.flatMap(URL.init(string:)) else { throw BrowserProtocolError.invalid }
+        var job = try DownloadJob(url:page,destination:destination)
+        job.browserSourceURL = URL(string:link.url); job.state = .downloading
+        try store.save(jobs + [job]); jobs.append(job); writeBrowserQAReport(); refresh(); return job.id
+    }
+    func browserImportProgress(id:UUID,received:Int64,total:Int64) { update(id,TransferProgress(received:received,total:total)); writeBrowserQAReport() }
+    func browserImportFinished(id:UUID,error:Error?) { finished(id,error:error) }
+    private func writeBrowserQAReport() {
+        guard let browserQAReportURL else { return }
+        let report = jobs.map { ["id":$0.id.uuidString,"state":$0.state.rawValue,"destination":$0.destination.path,"receivedBytes":$0.receivedBytes,"totalBytes":$0.totalBytes] as [String:Any] }
+        if let data = try? JSONSerialization.data(withJSONObject:report,options:[.prettyPrinted,.sortedKeys]) { try? data.write(to:browserQAReportURL,options:.atomic) }
+    }
+    @objc private func browserSetup() {
+        let alert = NSAlert(); alert.messageText = "Browser Integrations"
+        alert.informativeText = "Register the native host, then load the included Chromium or Firefox extension. Safari and other browsers can use the HTTP link bookmarklet. Automatic capture and session cookies are off until enabled in the extension."
+        alert.addButton(withTitle:"Register Browsers"); alert.addButton(withTitle:"Open Setup"); alert.addButton(withTitle:"Cancel")
+        let result = alert.runModal()
+        do {
+            if result == .alertFirstButtonReturn { try BrowserRegistration.install(app:Bundle.main.bundleURL) }
+            if result == .alertFirstButtonReturn || result == .alertSecondButtonReturn, let resources = Bundle.main.resourceURL { NSWorkspace.shared.open(resources.appendingPathComponent("BrowserIntegration/setup.html")) }
+        } catch { self.alert(error) }
     }
     func smokeCheck(output:URL) throws -> [String:Any] {
         guard let window, window.isVisible, let content = window.contentView else { throw DownloadError.storage("Main window is not visible") }
@@ -161,6 +207,7 @@ import CryptoKit
         let fileItem = NSMenuItem(); menu.addItem(fileItem); fileItem.submenu = NSMenu(title: "File")
         fileItem.submenu?.addItem(withTitle: "Add URL…", action: #selector(addURL), keyEquivalent: "n").target = self
         fileItem.submenu?.addItem(withTitle: "Batch URLs…", action: #selector(batchURLs), keyEquivalent: "b").target = self
+        fileItem.submenu?.addItem(withTitle: "Browser Integrations…", action: #selector(browserSetup), keyEquivalent: "").target = self
         let editItem = NSMenuItem(); menu.addItem(editItem); editItem.submenu = NSMenu(title: "Edit")
         for (title, action, key) in [("Cut", #selector(NSText.cut(_:)), "x"), ("Copy", #selector(NSText.copy(_:)), "c"), ("Paste", #selector(NSText.paste(_:)), "v"), ("Select All", #selector(NSText.selectAll(_:)), "a")] {
             editItem.submenu?.addItem(withTitle: title, action: action, keyEquivalent: key)
@@ -276,7 +323,7 @@ import CryptoKit
     }
     private func alert(_ error: Error) { NSAlert(error: error).runModal() }
     @discardableResult private func persist() -> Bool {
-        do { try store.save(jobs); lastPersist = Date(); storageError = nil; return true } catch { runningQueue = false; storageError = error.localizedDescription; status.stringValue = error.localizedDescription; return false }
+        do { try store.save(jobs); lastPersist = Date(); storageError = nil; writeBrowserQAReport(); return true } catch { runningQueue = false; storageError = error.localizedDescription; status.stringValue = error.localizedDescription; return false }
     }
     private func refresh() { let selectedID = selected?.id;emptyGroup?.isHidden = !visible.isEmpty;emptyTitle.stringValue = jobs.isEmpty ? "No downloads yet" : "No downloads in this category";table.reloadData();if let selectedID,let row = visible.firstIndex(where:{$0.id == selectedID}) { table.selectRowIndexes(IndexSet(integer:row),byExtendingSelection:false) }; window?.toolbar?.validateVisibleItems(); updateStatus(); if let id = detailsController?.jobID, let job = jobs.first(where:{$0.id == id}) { detailsController?.update(job,speed:progressTimes[id]?.2 ?? 0) } }
     func tableViewSelectionDidChange(_ notification:Notification) { window?.toolbar?.validateVisibleItems();updateStatus() }
@@ -334,17 +381,20 @@ import CryptoKit
     @objc private func resume() { if let job = selected { resumeJob(job.id) } }
     private func resumeJob(_ id:UUID) {
         guard let job = jobs.first(where:{$0.id == id}), let index = jobs.firstIndex(where:{$0.id == job.id}), job.state != .completed, tasks[job.id] == nil else { return }
+        guard job.browserSourceURL == nil else { alert(DownloadError.browserLocalURL); return }
         jobs[index].state = .queued; jobs[index].error = nil; jobs[index].scheduledAt = nil
         runningQueue = true; persist(); pumpQueue(); refresh()
     }
     @objc private func stop() { if let job = selected { pause(job.id) }; refresh() }
     private func pause(_ id:UUID) {
+        browserIntegration?.abort(jobID:id)
         tasks[id]?.cancel()
         if let i = jobs.firstIndex(where:{$0.id == id}), jobs[i].state == .queued || jobs[i].state == .downloading { jobs[i].state = .paused }
         persist()
     }
     func prepareForTermination() {
         runningQueue = false
+        browserIntegration?.stop()
         for task in tasks.values { task.cancel() }
         for index in jobs.indices where jobs[index].state == .downloading { jobs[index].state = .paused }
         persist()
@@ -361,7 +411,7 @@ import CryptoKit
         tasks[job.id] = Task { [weak self] in
             do {
                 let authorization = try CredentialStore.authorization(jobID:job.id)
-                try await engine.run(job:job,options:options,authorization:authorization) { [weak self] update in
+                try await engine.run(job:job,options:options,authorization:authorization,headers:CredentialStore.headers(jobID:job.id)) { [weak self] update in
                     await self?.update(job.id, update)
                 }
                 self?.finished(job.id,error:nil)
@@ -389,7 +439,7 @@ import CryptoKit
         if tasks[job.id] != nil { pause(job.id); status.stringValue = "Stopping download; delete it after it pauses."; return }
         let a = NSAlert(); a.messageText = "Remove \(job.destination.lastPathComponent)?"; a.informativeText = "Removes the job and partial data. Completed files remain in their destination."; a.addButton(withTitle:"Remove"); a.addButton(withTitle:"Cancel")
         guard a.runModal() == .alertFirstButtonReturn else { return }
-        do { try engine.discard(jobID:job.id); try CredentialStore.delete(jobID:job.id); jobs.removeAll(where:{$0.id == job.id}); persist(); refresh() } catch { alert(error) }
+        do { try engine.discard(jobID:job.id); try CredentialStore.delete(jobID:job.id); try CredentialStore.deleteHeaders(jobID:job.id); browserIntegration?.abort(jobID:job.id); jobs.removeAll(where:{$0.id == job.id}); persist(); refresh() } catch { alert(error) }
     }
     @objc private func showProgress() {
         guard let job = selected else { return }
@@ -397,7 +447,7 @@ import CryptoKit
         detailsController?.showWindow(nil)
     }
     @objc private func schedule() {
-        guard let job = selected, job.state != .completed, tasks[job.id] == nil else { return }
+        guard let job = selected, job.browserSourceURL == nil, job.state != .completed, tasks[job.id] == nil else { return }
         let a = NSAlert(); a.messageText = "Schedule Download"; a.addButton(withTitle:"Schedule"); a.addButton(withTitle:"Cancel")
         let picker = NSDatePicker(); picker.datePickerElements = [.yearMonthDay,.hourMinute]; picker.datePickerStyle = .textFieldAndStepper; picker.dateValue = Date().addingTimeInterval(60);picker.sizeToFit();a.accessoryView = picker
         guard a.runModal() == .alertFirstButtonReturn, let i = jobs.firstIndex(where:{$0.id == job.id}) else { return }
