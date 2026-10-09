@@ -6,8 +6,8 @@ The download manager, app bridge and native messaging host are native Swift. Bro
 
 1. Run `scripts/install.sh` and open `~/Applications/IDM.app`. This packages and registers the native host; putting the app outside Documents avoids browser privacy restrictions on that folder.
 2. Choose **File → Browser Integrations → Open Setup**. If you move the app, choose **Register Browsers** again.
-3. Chromium browsers: open the browser's extensions page, enable developer mode, choose **Load unpacked**, and select the setup page's `chromium` directory.
-4. Firefox: use `about:debugging#/runtime/this-firefox` → **Load Temporary Add-on** → the included `firefox/manifest.json`. Temporary add-ons must be reloaded after restarting Firefox. Persistent release installation requires Mozilla signing.
+3. Chromium browsers (Chrome, Edge, Brave, Vivaldi, Opera, Arc): download `IDM-Extension-<version>-chromium.zip` from the [app release](https://github.com/haseeb-heaven/idm-mac-os/releases/latest) and extract it. Open the browser's extensions page (`chrome://extensions`, `edge://extensions`, `brave://extensions`), enable developer mode, choose **Load unpacked**, and select the extracted folder. The same **IDM Extension** build works in every Chromium-based browser.
+4. Firefox: download `IDM-Extension-<version>-firefox.zip` from the app release and extract it. Use `about:debugging#/runtime/this-firefox` → **Load Temporary Add-on** → the extracted `manifest.json`. Temporary add-ons must be reloaded after restarting Firefox. Persistent release installation requires Mozilla signing.
 5. In Safari or another browser, copy the provided bookmarklet into a bookmark URL. It hands HTTP/HTTPS links to the app for destination approval.
 
 The setup resources are packaged in `IDM.app/Contents/Resources/BrowserIntegration` and generated in `build/extensions`. Native hosts are registered per user. No browser profile is modified by the extension build.

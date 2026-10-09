@@ -2,20 +2,20 @@
   "version": "0.2.0",
   "date": "2026-10-09",
   "buildValidation": {
-    "version": "0.2.1",
+    "version": "0.2.2",
     "minimumMacOS": "13.0",
     "artifacts": [
       {
-        "filename": "IDM-0.2.1-arm64.zip",
-        "bytes": 1943484,
-        "sha256": "b8a9c96d98844a21394d42d0139282f4115c61d99992799dda6e41a2e7bc68a5",
+        "filename": "IDM-0.2.2-arm64.zip",
+        "bytes": 1943593,
+        "sha256": "65f9b1760230e9a779153308c4f88f308fc2b7c9c314283a294d941b0792e5ff",
         "binaries": [
           {
             "name": "IDMMac",
             "architectures": [
               "arm64"
             ],
-            "sha256": "624c545b837784ecbc7cb232f19498774aab1eb8a1a969f66abab62330f25dd2",
+            "sha256": "bf8958b6d2afc405576457f28108dc07228ef0b809bb8c3e0ed535f78cc66e9f",
             "minimumMacOS": [
               "13.0"
             ],
@@ -35,16 +35,16 @@
         ]
       },
       {
-        "filename": "IDM-0.2.1-x86_64.zip",
-        "bytes": 1983562,
-        "sha256": "67b252e711bc6fd161ba640ce12106e16580e4f70be9d1c036c0007401cf44c2",
+        "filename": "IDM-0.2.2-x86_64.zip",
+        "bytes": 1983674,
+        "sha256": "f7778e7af279eebd05d1df9f7ac2687b4c6c04650c3150cb18e9213f5e41183d",
         "binaries": [
           {
             "name": "IDMMac",
             "architectures": [
               "x86_64"
             ],
-            "sha256": "52e62b26827f0954a4e7083b451f91071fa356518d070a8da3d326a8a748b10e",
+            "sha256": "a4d9d8869051ec2bcc4118a311fecb272928f399db792f6c63c1da510298f590",
             "minimumMacOS": [
               "13.0"
             ],
@@ -64,9 +64,9 @@
         ]
       },
       {
-        "filename": "IDM-0.2.1-universal.zip",
-        "bytes": 2585058,
-        "sha256": "8f8116f530452c661630c08866f5efe52d46025b064d4f9f34bca83444c53fd1",
+        "filename": "IDM-0.2.2-universal.zip",
+        "bytes": 2585166,
+        "sha256": "985cdfff75586fb840e0576b997fca90e764c86dcd0970487f2300d22983cafe",
         "binaries": [
           {
             "name": "IDMMac",
@@ -74,7 +74,7 @@
               "arm64",
               "x86_64"
             ],
-            "sha256": "0fe4c287371b474d0f21597b95013aea74c51a803c4d596f79f7fbcb38e01192",
+            "sha256": "8248bb83079df5530f961218f90c6516b479b31b42e900c45e2e12343c5a73d5",
             "minimumMacOS": [
               "13.0",
               "13.0"
@@ -95,6 +95,22 @@
             "signature": "ad hoc; strict verification passed"
           }
         ]
+      },
+      {
+        "filename": "IDM-Extension-0.2.2-chromium.zip",
+        "bytes": 8725,
+        "sha256": "5202b542cd5a8c5e22df2daf43ed882539e8bfd14bc8d76b335b1dfde12e0070",
+        "browser": "chromium",
+        "extensionName": "IDM Extension",
+        "manifestVersion": 3
+      },
+      {
+        "filename": "IDM-Extension-0.2.2-firefox.zip",
+        "bytes": 8413,
+        "sha256": "7af78c4821e8b13c3c5bf9ba50a079c284c0b0c6037a79326d37871c2518144b",
+        "browser": "firefox",
+        "extensionName": "IDM Extension",
+        "manifestVersion": 2
       }
     ],
     "runtimeValidation": "See docs/macos-compatibility.md; cross-compilation is not hardware validation."

@@ -25,9 +25,9 @@ Internet Download Manager is made by the original IDM team at Tonec FZE — http
 | Browser setup and compatibility | [Native messaging, extensions and browser test evidence](docs/browser-integrations.md) |
 | Regression checks and review | [Verification record](docs/verification.md) |
 
-## Download v0.2.1
+## Download v0.2.2
 
-[Get the latest release](https://github.com/haseeb-heaven/idm-mac-os/releases/latest): choose Apple Silicon (`arm64`), Intel (`x86_64`), or Universal. Extract the ZIP and move **IDM.app** to Applications. Packages are ad hoc signed and are not notarized; macOS may require approval in System Settings → Privacy & Security. Check the included `SHA256SUMS` before installation.
+[Get the latest release](https://github.com/haseeb-heaven/idm-mac-os/releases/latest): choose Apple Silicon (`arm64`), Intel (`x86_64`), or Universal for the app, plus `IDM-Extension` zips for Chromium browsers (Chrome, Edge, Brave) and Firefox. Extract the app ZIP and move **IDM.app** to Applications. Packages are ad hoc signed and are not notarized; macOS may require approval in System Settings → Privacy & Security. Check the included `SHA256SUMS` before installation.
 
 See [macOS compatibility and executed architecture checks](docs/macos-compatibility.md), [classic toolbar design and AgentReach research](docs/design/idm-classic-v020.md), and [release notes](docs/release-notes-v0.2.0.md).
 

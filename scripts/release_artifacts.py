@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and verify separately packaged Apple Silicon, Intel, and universal apps."""
+"""Build and verify separately packaged Apple Silicon, Intel, and universal apps, plus browser extension zips."""
 import hashlib, json, plistlib, re, subprocess, tempfile
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
@@ -49,6 +49,19 @@ for architecture in ('arm64','x86_64','universal'):
             assert digest(extracted/'Contents/MacOS'/product)==digest(app/'Contents/MacOS'/product)
     artifacts.append({'filename':archive.name,'bytes':archive.stat().st_size,'sha256':digest(archive),'binaries':binaries})
     staging.cleanup()
+# IDM Extension ships beside the app archives so every major browser can load it.
+import shutil
+for browser in ('chromium','firefox'):
+    source=ROOT/'build/extensions'/browser
+    extension_manifest=json.loads((source/'manifest.json').read_text())
+    assert extension_manifest['name']=='IDM Extension',(browser,extension_manifest.get('name'))
+    archive=OUT/f'IDM-Extension-{VERSION["version"]}-{browser}.zip'
+    with tempfile.TemporaryDirectory(prefix='idm-ext-stage-',dir='/private/tmp') as staging:
+        staged=Path(staging)/browser
+        shutil.copytree(source,staged)
+        # No resource forks or quarantine metadata are distributed in release archives.
+        command('ditto','-c','-k','--norsrc','--noextattr','--keepParent',str(staged),str(archive))
+    artifacts.append({'filename':archive.name,'bytes':archive.stat().st_size,'sha256':digest(archive),'browser':browser,'extensionName':extension_manifest['name'],'manifestVersion':extension_manifest['manifest_version']})
 manifest={'version':VERSION['version'],'minimumMacOS':VERSION['minimumMacOS'],'artifacts':artifacts,'runtimeValidation':'See docs/macos-compatibility.md; cross-compilation is not hardware validation.'}
 (OUT/'release-manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
 (OUT/'SHA256SUMS').write_text(''.join(f'{a["sha256"]}  {a["filename"]}\n' for a in artifacts))
