@@ -225,6 +225,14 @@ final class DownloadTests: @unchecked Sendable {
         let links = try await SiteGrabber.links(on:fixture.base.appendingPathComponent("page"))
         try XCTAssertEqual(links,[fixture.base.appendingPathComponent("asset.zip")])
     }
+    func testGrabberItemsCategorization() async throws {
+        let fixture = try Fixture()
+        let items = try await SiteGrabber.items(on:fixture.base.appendingPathComponent("page"))
+        try XCTAssertEqual(items.count,1)
+        try XCTAssertEqual(items[0].filename,"asset.zip")
+        try XCTAssertEqual(items[0].category,"Compressed")
+        try XCTAssertEqual(items[0].fileExtension,".zip")
+    }
     func testSQLiteRoundTripAndCrashRecovery() throws {
         let dir = try directory();defer { try? FileManager.default.removeItem(at:dir) }
         let store = try JobStore(url:dir.appendingPathComponent("jobs.sqlite"))
@@ -420,6 +428,7 @@ private func runOpenIGICheck(output:URL) async throws -> String {
         try await suite.testGrabberIgnoresInactiveBase();passed += 1;log("PASS testGrabberIgnoresInactiveBase")
         try await suite.testGrabberBaseURL();passed += 1;log("PASS testGrabberBaseURL")
         log("RUN testGrabberDeduplicatesFileLinks"); try await suite.testGrabberDeduplicatesFileLinks(); passed += 1; log("PASS testGrabberDeduplicatesFileLinks")
+        try await suite.testGrabberItemsCategorization(); passed += 1; log("PASS testGrabberItemsCategorization")
         log("RUN testSQLiteRoundTripAndCrashRecovery"); try suite.testSQLiteRoundTripAndCrashRecovery(); passed += 1; log("PASS testSQLiteRoundTripAndCrashRecovery")
         try await suite.testChangedChunkLayoutResume();passed += 1;log("PASS testChangedChunkLayoutResume")
         try await suite.testInvalidOptionsAndDestination();passed += 1;log("PASS testInvalidOptionsAndDestination")

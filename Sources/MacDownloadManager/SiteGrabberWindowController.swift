@@ -10,11 +10,29 @@ import UniformTypeIdentifiers
     private var activeCategory = "All"
     private var destinationURL: URL
 
+    private struct QuickSite {
+        let title: String
+        let urlString: String
+    }
+
+    private let quickSites: [QuickSite] = [
+        QuickSite(title: "Choose Website… (or enter URL)", urlString: ""),
+        QuickSite(title: "Node.js Dist (Official releases & binaries)", urlString: "https://nodejs.org/dist/"),
+        QuickSite(title: "Python Downloads (Official Python installers & packages)", urlString: "https://www.python.org/downloads/"),
+        QuickSite(title: "Internet Archive (Software library)", urlString: "https://archive.org/details/software"),
+        QuickSite(title: "Linux Mint Releases (ISOs and packages)", urlString: "https://www.linuxmint.com/download.php"),
+        QuickSite(title: "Ubuntu Cloud Images (Daily & release server ISOs)", urlString: "https://cloud-images.ubuntu.com/releases/"),
+        QuickSite(title: "Apple Open Source (Official tarballs & headers)", urlString: "https://opensource.apple.com/"),
+        QuickSite(title: "W3C Media Samples (HTML5 audio & video test files)", urlString: "https://www.w3schools.com/html/html5_video.asp"),
+        QuickSite(title: "Git for Windows Releases (Binaries & packages)", urlString: "https://github.com/git-for-windows/git/releases")
+    ]
+
     private let urlField = NSTextField()
+    private let sitePopup = NSPopUpButton()
     private let presetPopup = NSPopUpButton()
     private let grabButton = NSButton(title: "Start Grab", target: nil, action: nil)
     private let progressIndicator = NSProgressIndicator()
-    private let statusLabel = NSTextField(labelWithString: "Enter a web address and click Start Grab to find files.")
+    private let statusLabel = NSTextField(labelWithString: "Enter a web address or choose a website below to find files.")
 
     private let categoryFilter = NSSegmentedControl()
     private let searchField = NSSearchField()
@@ -43,6 +61,15 @@ import UniformTypeIdentifiers
     }
 
     required init?(coder: NSCoder) { fatalError("Not supported") }
+    
+    override func showWindow(_ sender: Any?) {
+        super.showWindow(sender)
+        if urlField.stringValue.isEmpty,
+           let paste = NSPasteboard.general.string(forType: .string)?.trimmingCharacters(in: .whitespacesAndNewlines),
+           paste.lowercased().hasPrefix("http://") || paste.lowercased().hasPrefix("https://") {
+            urlField.stringValue = paste
+        }
+    }
     
     func updateAppearance(_ appearance: InterfaceAppearance) {
         window?.appearance = appearance.appKit
@@ -75,19 +102,32 @@ import UniformTypeIdentifiers
         addressCaption.font = .systemFont(ofSize: 12, weight: .medium)
         addressCaption.widthAnchor.constraint(equalToConstant: 65).isActive = true
 
-        urlField.placeholderString = "https://example.com/page"
+        urlField.placeholderString = "https://example.com/page (or choose a website below)"
         urlField.target = self; urlField.action = #selector(startGrab)
         let pasteBtn = NSButton(title: "Paste", target: self, action: #selector(pasteURL))
         pasteBtn.bezelStyle = .rounded; pasteBtn.controlSize = .small
 
-        let urlRow = NSStackView(views: [addressCaption, urlField, pasteBtn])
+        let visitBtn = NSButton(title: "Visit Site", target: self, action: #selector(openCurrentSiteInBrowser))
+        visitBtn.bezelStyle = .rounded; visitBtn.controlSize = .small
+        visitBtn.toolTip = "Open this web address in your default web browser"
+
+        let urlRow = NSStackView(views: [addressCaption, urlField, pasteBtn, visitBtn])
         urlRow.alignment = .centerY; urlRow.spacing = 8
         urlField.setContentHuggingPriority(.defaultLow, for: .horizontal)
 
+        let siteCaption = NSTextField(labelWithString: "Website:")
+        siteCaption.font = .systemFont(ofSize: 12, weight: .medium)
+        siteCaption.widthAnchor.constraint(equalToConstant: 65).isActive = true
+
+        sitePopup.removeAllItems()
+        for s in quickSites { sitePopup.addItem(withTitle: s.title) }
+        sitePopup.target = self; sitePopup.action = #selector(sitePopupChanged)
+        sitePopup.controlSize = .small
+
         let presetCaption = NSTextField(labelWithString: "Template:")
         presetCaption.font = .systemFont(ofSize: 12, weight: .medium)
-        presetCaption.widthAnchor.constraint(equalToConstant: 65).isActive = true
 
+        presetPopup.removeAllItems()
         presetPopup.addItems(withTitles: [
             "All files on the web site",
             "Pictures & Images (JPG, PNG, WebP, GIF, SVG)",
@@ -99,6 +139,7 @@ import UniformTypeIdentifiers
         presetPopup.target = self; presetPopup.action = #selector(presetChanged)
         presetPopup.controlSize = .small
 
+        grabButton.title = "Start Grab"
         grabButton.target = self; grabButton.action = #selector(startGrab)
         grabButton.bezelStyle = .rounded
         grabButton.keyEquivalent = "\r"
@@ -107,13 +148,13 @@ import UniformTypeIdentifiers
         progressIndicator.controlSize = .small
         progressIndicator.isDisplayedWhenStopped = false
 
-        let presetRow = NSStackView(views: [presetCaption, presetPopup, NSView(), progressIndicator, grabButton])
-        presetRow.alignment = .centerY; presetRow.spacing = 8
+        let controlRow = NSStackView(views: [siteCaption, sitePopup, presetCaption, presetPopup, NSView(), progressIndicator, grabButton])
+        controlRow.alignment = .centerY; controlRow.spacing = 8
 
         statusLabel.font = .systemFont(ofSize: 11)
         statusLabel.textColor = .secondaryLabelColor
 
-        let inputCard = NSStackView(views: [headerStack, urlRow, presetRow, statusLabel])
+        let inputCard = NSStackView(views: [headerStack, urlRow, controlRow, statusLabel])
         inputCard.orientation = .vertical; inputCard.alignment = .leading; inputCard.spacing = 8
         inputCard.edgeInsets = NSEdgeInsets(top: 14, left: 16, bottom: 12, right: 16)
 
@@ -218,6 +259,30 @@ import UniformTypeIdentifiers
         ])
     }
 
+    @objc private func sitePopupChanged() {
+        let idx = sitePopup.indexOfSelectedItem
+        guard quickSites.indices.contains(idx), !quickSites[idx].urlString.isEmpty else { return }
+        let site = quickSites[idx]
+        urlField.stringValue = site.urlString
+        startGrab()
+    }
+
+    @objc private func openCurrentSiteInBrowser() {
+        var text = urlField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+        if !text.lowercased().hasPrefix("http://") && !text.lowercased().hasPrefix("https://") {
+            text = "https://" + text
+        }
+        if let url = URL(string: text) {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
+    func grab(url: URL) {
+        urlField.stringValue = url.absoluteString
+        startGrab()
+    }
+
     @objc private func pasteURL() {
         if let pasteboardString = NSPasteboard.general.string(forType: .string)?.trimmingCharacters(in: .whitespacesAndNewlines), !pasteboardString.isEmpty {
             urlField.stringValue = pasteboardString
@@ -227,7 +292,7 @@ import UniformTypeIdentifiers
     @objc private func startGrab() {
         var text = urlField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else {
-            statusLabel.stringValue = "Please enter a valid website address."
+            statusLabel.stringValue = "Please enter a web address or choose a website from the dropdown."
             return
         }
         if !text.lowercased().hasPrefix("http://") && !text.lowercased().hasPrefix("https://") {
@@ -258,7 +323,11 @@ import UniformTypeIdentifiers
         grabButton.isEnabled = true
         allItems = items
         selectedURLs = Set(items.map(\.url)) // Selected by default
-        statusLabel.stringValue = "Scan complete. Found \(items.count) downloadable files."
+        if items.isEmpty {
+            statusLabel.stringValue = "Scan complete. No downloadable files detected on this page."
+        } else {
+            statusLabel.stringValue = "Scan complete. Found \(items.count) downloadable files."
+        }
         applyFilters()
     }
 
