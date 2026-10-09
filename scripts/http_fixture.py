@@ -10,6 +10,12 @@ class Handler(BaseHTTPRequestHandler):
  def do_GET(self):self.serve(True)
  def serve(self,body):
   path=urlsplit(self.path).path
+  if path=='/browserredirect':
+   self.send_response(302);self.send_header('Location','/browserheaders');self.end_headers();return
+  if path=='/browserheaders' and (self.headers.get('Cookie')!='fixture=1' or self.headers.get('Referer')!='https://example.com/page' or self.headers.get('User-Agent')!='BrowserFixture/1'):
+   self.send_error(403);return
+  if path=='/browserleak' and (self.headers.get('Cookie') or self.headers.get('Authorization')):
+   self.send_error(403);return
   if path in ['/redirectauth','/externalredirect']:
    target='/auth' if path=='/redirectauth' else parse_qs(urlsplit(self.path).query)['target'][0]
    self.send_response(302);self.send_header('Location',target);self.end_headers();return

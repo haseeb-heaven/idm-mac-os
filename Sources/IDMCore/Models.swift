@@ -10,6 +10,7 @@ public struct DownloadJob: Codable, Identifiable, Sendable {
     public var totalBytes: Int64 = 0
     public var receivedBytes: Int64 = 0
     public var error: String?
+    public var browserSourceURL: URL?
     public var scheduledAt: Date?
     public var createdAt = Date()
     public init(url: URL, destination: URL, scheduledAt: Date? = nil) throws {

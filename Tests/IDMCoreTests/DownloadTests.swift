@@ -311,6 +311,7 @@ final class DownloadTests: @unchecked Sendable {
 private func log(_ text:String) { FileHandle.standardOutput.write(Data((text + "\n").utf8)) }
 @main struct TestRunner {
     static func main() async throws {
+        if ProcessInfo.processInfo.environment["IDM_BROWSER_CHECKS_ONLY"] == "1" { let count=try await runBrowserChecks();print("Passed \(count) browser checks");return }
         let suite = DownloadTests()
         if ProcessInfo.processInfo.arguments.contains("--large") { try await suite.testFiveGiBDownload();return }
         if ProcessInfo.processInfo.arguments.contains("--https") { try await suite.testTrustedHTTPS();log("PASS trusted HTTPS with independent SHA256 reference");return }
@@ -379,6 +380,7 @@ private func log(_ text:String) { FileHandle.standardOutput.write(Data((text + "
         try await suite.testCrossOriginRedirectDropsCredentials();passed += 1;log("PASS testCrossOriginRedirectDropsCredentials")
         try suite.testBrowserLocalURLs();passed += 1;log("PASS testBrowserLocalURLs")
         log("RUN testURLValidation"); try suite.testURLValidation(); passed += 1; log("PASS testURLValidation")
+        passed += try await runBrowserChecks();log("PASS browser protocol, blobs, legacy jobs and Keychain")
         log("Passed \(passed) checks")
     }
 }

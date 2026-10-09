@@ -40,8 +40,10 @@ public struct DownloadEngine: Sendable {
         let path = workDirectory.appendingPathComponent(jobID.uuidString)
         if FileManager.default.fileExists(atPath: path.path) { try FileManager.default.removeItem(at: path) }
     }
-    public func run(job: DownloadJob, options: DownloadOptions = .init(), authorization: String? = nil,
+    public func run(job: DownloadJob, options: DownloadOptions = .init(), authorization: String? = nil, headers: [String:String] = [:],
                     progress: @escaping @Sendable (TransferProgress) async -> Void = { _ in }) async throws {
+        guard job.browserSourceURL == nil else { throw DownloadError.browserLocalURL }
+        try BrowserHeaders.validate(headers)
         guard !FileManager.default.fileExists(atPath: job.destination.path) else { throw DownloadError.destinationExists }
         guard options.chunkBytes > 0, options.connections > 0, options.connections <= 32,
               options.retries >= 0, options.retries <= 10, options.bytesPerSecond >= 0 else { throw DownloadError.storage("Invalid download options") }
@@ -60,9 +62,10 @@ public struct DownloadEngine: Sendable {
         let session = URLSession(configuration: config,delegate:chunks,delegateQueue:nil)
         defer { session.invalidateAndCancel() }
         let manifestURL = directory.appendingPathComponent("manifest.json")
-        var inspected = try await inspectWithRetry(job.url, session: session, authorization: authorization, options: options)
+        var inspected = try await inspectWithRetry(job.url, session: session, authorization: authorization, headers: headers, options: options)
         if !options.useRanges { inspected.ranges = false }
         let fresh = inspected
+        let transferHeaders = HTTPChunkStream.sameOrigin(job.url,fresh.finalURL) ? headers : headers.filter { $0.key.lowercased() != "cookie" }
         let transferAuthorization = HTTPChunkStream.sameOrigin(job.url,fresh.finalURL) ? authorization : nil
         if let data = try? Data(contentsOf: manifestURL), let old = try? JSONDecoder().decode(Manifest.self, from: data) {
             if old.url != fresh.url || old.finalURL != fresh.finalURL || old.length != fresh.length || old.validator == nil ||
@@ -99,7 +102,7 @@ public struct DownloadEngine: Sendable {
                     let end = ranged ? min(start + options.chunkBytes - 1, fresh.length - 1) : nil
                     try await transfer(url: fresh.finalURL, manifest: fresh, start: ranged ? start : nil, end: end,
                                        file: directory.appendingPathComponent("\(index).part"), session: session,
-                                       authorization: transferAuthorization, retries: options.retries, meter: meter, chunks: chunks)
+                                       authorization: transferAuthorization, headers: transferHeaders, retries: options.retries, meter: meter, chunks: chunks)
                 }
             }
             for _ in 0..<min(count, options.connections) { enqueue(next); next += 1 }
@@ -111,7 +114,7 @@ public struct DownloadEngine: Sendable {
             try Task.checkCancellation()
             try discard(jobID: job.id)
             var fallback = options; fallback.useRanges = false
-            try await run(job: job, options: fallback, authorization: authorization, progress: progress)
+            try await run(job: job, options: fallback, authorization: authorization, headers: headers, progress: progress)
             return
         }
         try Task.checkCancellation()
@@ -143,10 +146,11 @@ public struct DownloadEngine: Sendable {
         try fm.removeItem(at: directory)
         await meter.finish()
     }
-    private func request(_ url: URL, authorization: String?) -> URLRequest {
+    private func request(_ url: URL, authorization: String?, headers: [String:String]) -> URLRequest {
         var request = URLRequest(url: url)
         request.setValue("identity", forHTTPHeaderField: "Accept-Encoding")
         request.setValue("IDMMac/0.1", forHTTPHeaderField: "User-Agent")
+        for (key,value) in headers { request.setValue(value,forHTTPHeaderField:key) }
         if let authorization { request.setValue(authorization, forHTTPHeaderField: "Authorization") }
         return request
     }
@@ -160,10 +164,10 @@ public struct DownloadEngine: Sendable {
         if value?.hasPrefix("\"") == true { return http.value(forHTTPHeaderField:"ETag") }
         return http.value(forHTTPHeaderField:"Last-Modified")
     }
-    private func inspectWithRetry(_ url:URL, session:URLSession, authorization:String?, options:DownloadOptions) async throws -> Manifest {
+    private func inspectWithRetry(_ url:URL, session:URLSession, authorization:String?, headers:[String:String], options:DownloadOptions) async throws -> Manifest {
         for attempt in 0...options.retries {
             try Task.checkCancellation()
-            do { return try await inspect(url,session:session,authorization:authorization,chunkBytes:options.chunkBytes) }
+            do { return try await inspect(url,session:session,authorization:authorization,headers:headers,chunkBytes:options.chunkBytes) }
             catch {
                 if Task.isCancelled { throw CancellationError() }
                 if let problem = error as? DownloadError {
@@ -175,12 +179,12 @@ public struct DownloadEngine: Sendable {
         }
         throw DownloadError.incomplete
     }
-    private func inspect(_ url: URL, session: URLSession, authorization: String?, chunkBytes: Int64) async throws -> Manifest {
-        var head = request(url, authorization: authorization); head.httpMethod = "HEAD"
+    private func inspect(_ url: URL, session: URLSession, authorization: String?, headers:[String:String], chunkBytes: Int64) async throws -> Manifest {
+        var head = request(url, authorization: authorization, headers: headers); head.httpMethod = "HEAD"
         let (_, response) = try await session.data(for: head)
         guard var http = response as? HTTPURLResponse else { throw DownloadError.http(0) }
         if [403,405,501].contains(http.statusCode) {
-            var probe = request(url,authorization:authorization)
+            var probe = request(url,authorization:authorization,headers:headers)
             probe.setValue("bytes=0-0",forHTTPHeaderField:"Range")
             let (bytes,response) = try await session.bytes(for:probe)
             defer { bytes.task.cancel() }
@@ -207,14 +211,14 @@ public struct DownloadEngine: Sendable {
         return (try FileManager.default.attributesOfItem(atPath: url.path)[.size] as? NSNumber)?.int64Value ?? 0
     }
     private func transfer(url: URL, manifest: Manifest, start: Int64?, end: Int64?, file: URL,
-                          session: URLSession, authorization: String?, retries: Int, meter: Meter, chunks: HTTPChunkStream) async throws {
+                          session: URLSession, authorization: String?, headers:[String:String], retries: Int, meter: Meter, chunks: HTTPChunkStream) async throws {
         for attempt in 0...retries {
             try Task.checkCancellation()
             do {
                 var existing = try fileSize(file)
                 if let start, let end, existing == end - start + 1 { return }
                 if start == nil && existing > 0 { try FileManager.default.removeItem(at: file); await meter.discard(existing); existing = 0 }
-                var req = request(url, authorization: authorization)
+                var req = request(url, authorization: authorization, headers: headers)
                 if let start, let end {
                     req.setValue("bytes=\(start + existing)-\(end)", forHTTPHeaderField: "Range")
                     req.setValue(manifest.validator, forHTTPHeaderField: "If-Range")
