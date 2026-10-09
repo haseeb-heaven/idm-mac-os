@@ -34,6 +34,8 @@ import CryptoKit
     private var timer: Timer?
     private var runningQueue = true
     private var detailsController: DownloadDetailsController?
+    private var grabberController: SiteGrabberWindowController?
+    private let speedStatus = NSTextField(labelWithString: "Speed Limit: Off")
     private var lastPersist = Date.distantPast
     private var progressTimes: [UUID: (Date, Int64, Double)] = [:]
 
@@ -288,6 +290,7 @@ import CryptoKit
         let fileItem = NSMenuItem(); menu.addItem(fileItem); fileItem.submenu = NSMenu(title: "File")
         fileItem.submenu?.addItem(withTitle: "Add URL…", action: #selector(addURL), keyEquivalent: "n").target = self
         fileItem.submenu?.addItem(withTitle: "Batch URLs…", action: #selector(batchURLs), keyEquivalent: "b").target = self
+        fileItem.submenu?.addItem(withTitle: "Site Grabber…", action: #selector(grabber), keyEquivalent: "g").target = self
         fileItem.submenu?.addItem(withTitle: "Browser Integrations…", action: #selector(browserSetup), keyEquivalent: "").target = self
         let editItem = NSMenuItem(); menu.addItem(editItem); editItem.submenu = NSMenu(title: "Edit")
         for (title, action, key) in [("Cut", #selector(NSText.cut(_:)), "x"), ("Copy", #selector(NSText.copy(_:)), "c"), ("Paste", #selector(NSText.paste(_:)), "v"), ("Select All", #selector(NSText.selectAll(_:)), "a")] {
@@ -346,6 +349,7 @@ import CryptoKit
         NSApp.appearance = interfaceAppearance.appKit
         window?.appearance = interfaceAppearance.appKit
         detailsController?.window?.appearance = interfaceAppearance.appKit
+        grabberController?.updateAppearance(interfaceAppearance)
         window?.backgroundColor = interfaceAppearance.windowBackground
         let sidebarColor = interfaceAppearance.sidebarBackground
         let tableColor = interfaceAppearance.tableBackground
@@ -356,6 +360,7 @@ import CryptoKit
             listSurface?.layer?.backgroundColor = tableColor.cgColor
         }
         table.backgroundColor = tableColor
+        table.gridColor = NSColor.separatorColor.withAlphaComponent(0.25)
         categories.backgroundColor = sidebarColor
         window?.contentView?.needsDisplay = true
     }
@@ -372,14 +377,14 @@ import CryptoKit
         categories.style = .sourceList; categories.backgroundColor = AppTheme.sidebar
         categories.setAccessibilityLabel("Download categories")
         let categoryScroll = NSScrollView(); categoryScroll.documentView = categories; categoryScroll.hasVerticalScroller = true; categoryScroll.drawsBackground = false
-        let sidebarTitle = NSTextField(labelWithString:"LIBRARY"); sidebarTitle.font = .systemFont(ofSize:10,weight:.semibold); sidebarTitle.textColor = .secondaryLabelColor
+        let sidebarTitle = NSTextField(labelWithString:"CATEGORIES"); sidebarTitle.font = .systemFont(ofSize:10,weight:.bold); sidebarTitle.textColor = .secondaryLabelColor
         let sidebar = AppearanceSurface(views:[sidebarTitle,categoryScroll]); sidebar.orientation = .vertical; sidebar.alignment = .leading; sidebar.spacing = 10
         sidebar.edgeInsets = NSEdgeInsets(top:18,left:12,bottom:10,right:8)
         sidebar.surfaceColor = AppTheme.sidebar
         sidebarSurface = sidebar
         categoryScroll.widthAnchor.constraint(equalTo:sidebar.widthAnchor,constant:-20).isActive = true
         table.columnAutoresizingStyle = .uniformColumnAutoresizingStyle
-        table.backgroundColor = .textBackgroundColor; table.gridStyleMask = []; table.usesAlternatingRowBackgroundColors = false
+        table.backgroundColor = .textBackgroundColor; table.gridStyleMask = [.solidHorizontalGridLineMask]; table.usesAlternatingRowBackgroundColors = false
         table.allowsMultipleSelection = false; table.dataSource = self; table.delegate = self; table.rowHeight = 44
         table.intercellSpacing = NSSize(width:0,height:0); table.target = self; table.doubleAction = #selector(showProgress)
         for (id,title,width,minimum) in [("name","Name",280.0,170.0),("size","Size",90.0,65.0),("status","Status",105.0,85.0),("progress","Progress",140.0,100.0),("speed","Speed",100.0,80.0),("date","Added",110.0,85.0)] {
@@ -411,7 +416,11 @@ import CryptoKit
         failureStrip.edgeInsets = NSEdgeInsets(top:10,left:16,bottom:10,right:16); failureStrip.isHidden = true
         failureLabel.setContentCompressionResistancePriority(.defaultLow,for:.horizontal)
         status.font = .systemFont(ofSize:11); status.textColor = .secondaryLabelColor; status.lineBreakMode = .byTruncatingTail
-        let statusRow = NSStackView(views:[status]); statusRow.orientation = .horizontal; statusRow.edgeInsets = NSEdgeInsets(top:8,left:16,bottom:8,right:16)
+        speedStatus.font = .systemFont(ofSize:11); speedStatus.textColor = .secondaryLabelColor; speedStatus.lineBreakMode = .byTruncatingTail
+        let statusSpacer = NSView(); statusSpacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        let statusRow = NSStackView(views:[status, statusSpacer, speedStatus]); statusRow.orientation = .horizontal; statusRow.edgeInsets = NSEdgeInsets(top:8,left:16,bottom:8,right:16)
+        status.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        speedStatus.setContentHuggingPriority(.required, for: .horizontal)
         let footerLine = NSBox(); footerLine.boxType = .separator
         let root = NSStackView(views:[split,failureStrip,footerLine,statusRow]); root.orientation = .vertical; root.alignment = .leading; root.spacing = 0
         root.translatesAutoresizingMaskIntoConstraints = false; content.addSubview(root)
@@ -430,13 +439,13 @@ import CryptoKit
     @objc private func searchChanged() { refresh() }
     func tableView(_ tableView:NSTableView,rowViewForRow row:Int) -> NSTableRowView? { DownloadTableRowView() }
     func outlineView(_ outlineView: NSOutlineView, numberOfChildrenOfItem item: Any?) -> Int {
-        if item == nil { return 4 }
+        if item == nil { return 5 }
         if item as? String == "All Downloads" { return 6 }
         if item as? String == "Queues" { return 1 }
         return 0
     }
     func outlineView(_ outlineView: NSOutlineView, child index: Int, ofItem item: Any?) -> Any {
-        if item == nil { return ["All Downloads", "Unfinished", "Finished", "Queues"][index] }
+        if item == nil { return ["All Downloads", "Unfinished", "Finished", "Grabber projects", "Queues"][index] }
         if item as? String == "Queues" { return "Main Queue" }
         return ["Compressed", "Documents", "Music", "Programs", "Video", "Other"][index]
     }
@@ -444,6 +453,9 @@ import CryptoKit
     func outlineView(_ outlineView: NSOutlineView, objectValueFor tableColumn: NSTableColumn?, byItem item: Any?) -> Any? { item }
     func outlineViewSelectionDidChange(_ notification: Notification) {
         guard categories.selectedRow >= 0, let item = categories.item(atRow:categories.selectedRow) as? String else { return }
+        if item == "Grabber projects" {
+            grabber()
+        }
         categoryFilter = item; refresh()
     }
     func numberOfRows(in tableView: NSTableView) -> Int { visible.count }
@@ -507,7 +519,7 @@ import CryptoKit
     private func refresh() {
         let selectedID = selectedJobID
         emptyGroup?.isHidden = !visible.isEmpty
-        emptyTitle.stringValue = !search.stringValue.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty ? "No matching downloads" : jobs.isEmpty ? "No downloads yet" : "No downloads in this category"
+        emptyTitle.stringValue = !search.stringValue.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty ? "No matching downloads" : jobs.isEmpty ? "No downloads yet" : categoryFilter == "Grabber projects" ? "Explore website files with Site Grabber" : "No downloads in this category"
         refreshingTable = true
         table.reloadData()
         if let selectedID,let row = visible.firstIndex(where:{$0.id == selectedID}) {
@@ -533,7 +545,11 @@ import CryptoKit
         failureStrip.isHidden = selected?.error == nil
         failureLabel.stringValue = selected?.error ?? "";failureLabel.toolTip = selected?.error
         failureRetry.isEnabled = selected?.browserSourceURL == nil && (selected?.state == .failed || selected?.state == .paused)
- if let job = selected, let error = job.error { status.stringValue = "Download failed · " + (job.url.host ?? "");status.toolTip = error;return }; if let storageError { status.stringValue = storageError; return }; status.stringValue = "\(jobs.count) downloads · \(tasks.count) active · Queue \(runningQueue ? "running" : "stopped")" }
+        speedStatus.stringValue = options.bytesPerSecond > 0 ? "Speed Limit: \(options.bytesPerSecond/1024) KiB/s" : "Speed Limit: Off"
+        if let job = selected, let error = job.error { status.stringValue = "Download failed · " + (job.url.host ?? "");status.toolTip = error;return }
+        if let storageError { status.stringValue = storageError; return }
+        status.stringValue = "\(jobs.count) downloads · \(tasks.count) active · Queue \(runningQueue ? "running" : "stopped")"
+    }
     @objc private func about() {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.3.0"
         let a = NSAlert()
@@ -712,22 +728,43 @@ import CryptoKit
         do { UserDefaults.standard.set(try JSONEncoder().encode(options),forKey:"downloadOptions") } catch { alert(error) }
     }
     @objc private func grabber() {
-        let a = NSAlert(); a.messageText = "Site Grabber"; a.informativeText = "Find downloadable links on one public page. Review the links before adding them."; a.addButton(withTitle:"Find Links"); a.addButton(withTitle:"Cancel")
-        let field = textField("https://example.com/page"); a.accessoryView = field
-        guard a.runModal() == .alertFirstButtonReturn, let url = URL(string:field.stringValue), ["http","https"].contains(url.scheme ?? ""), url.host != nil else { return }
-        Task { [weak self] in
-            do {
-                let links = try await SiteGrabber.links(on:url)
-                self?.reviewLinks(links)
-            } catch { self?.alert(error) }
+        if grabberController == nil {
+            grabberController = SiteGrabberWindowController { [weak self] urls, destination, startImmediately in
+                self?.addGrabbedDownloads(urls: urls, destination: destination, startImmediately: startImmediately)
+            }
         }
+        grabberController?.updateAppearance(interfaceAppearance)
+        grabberController?.showWindow(nil)
+        grabberController?.window?.makeKeyAndOrderFront(nil)
     }
-    private func reviewLinks(_ links:[URL]) {
-        let a = NSAlert(); a.messageText = "Found \(links.count) file links"; a.informativeText = "Remove any URLs you do not want to download."; a.addButton(withTitle:"Add Downloads"); a.addButton(withTitle:"Cancel")
-        let text = NSTextView(frame:NSRect(x:0,y:0,width:520,height:250));text.isRichText = false; text.string = links.map(\.absoluteString).joined(separator:"\n"); let scroll = NSScrollView(frame:text.frame); scroll.documentView = text; scroll.hasVerticalScroller = true; a.accessoryView = scroll
-        guard a.runModal() == .alertFirstButtonReturn else { return }
-        let panel = NSOpenPanel(); panel.canChooseFiles = false; panel.canChooseDirectories = true; panel.canCreateDirectories = true
-        guard panel.runModal() == .OK, let directory = panel.url else { return }; addBatch(text.string.components(separatedBy:.newlines),directory:directory)
+
+    private func addGrabbedDownloads(urls: [URL], destination: URL, startImmediately: Bool) {
+        do {
+            var additions = [DownloadJob]()
+            for url in urls {
+                let name = DownloadFilename.from(url)
+                var fileDest = destination.appendingPathComponent(name)
+                var suffix = 1
+                while FileManager.default.fileExists(atPath: fileDest.path) || (jobs + additions).contains(where: { $0.destination == fileDest }) {
+                    fileDest = destination.appendingPathComponent("\(suffix)-\(name)")
+                    suffix += 1
+                }
+                var job = try DownloadJob(url: url, destination: fileDest)
+                if !startImmediately {
+                    job.state = .queued
+                }
+                additions.append(job)
+            }
+            jobs += additions
+            persist()
+            refresh()
+            if startImmediately {
+                runningQueue = true
+                pumpQueue()
+            }
+        } catch {
+            alert(error)
+        }
     }
 }
 

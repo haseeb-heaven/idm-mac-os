@@ -129,6 +129,7 @@ enum ToolbarAppearance:String { case classic, compact }
         case "stop","stopAll","stopQueue","Unfinished":orange
         case "delete":.systemRed
         case "options","schedule","Music","Video":purple
+        case "grabber","Grabber projects":NSColor(srgbRed:0.14,green:0.55,blue:0.85,alpha:1)
         default:blue
         }
     }
