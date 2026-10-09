@@ -1,4 +1,4 @@
-import {test} from 'node:test'; import assert from 'node:assert/strict'; import '../../integrations/shared/core.js'; const core = globalThis.IDMCore;
+import {test} from 'node:test'; import assert from 'node:assert/strict'; import '../../integrations/shared/core.js'; const core = globalThis.DownloadCore;
 test('HTTP validation, sanitization and deduplication',() => { assert.equal(core.links([{url:'https://a.test/f'},{url:'https://a.test/f'}]).length,1); assert.equal(core.validateLink({url:'https://a.test',filename:'a/b'}).filename,'a_b'); for(const url of ['file:///tmp/a','javascript:alert(1)','https://u:p@a.test']) assert.throws(()=>core.validateLink({url})); assert.throws(()=>core.validateLink({url:'https://a.test',headers:{Cookie:'a\r\nb'}})); assert.equal(core.links(Array.from({length:201},(_,i)=>({url:`https://a.test/${i}`}))).length,200); });
 for (const status of ['queued','cancelled','error','disconnect']) test(`capture ${status} preserves correct browser state`,async()=> { const calls=[]; const api=Object.fromEntries(['pause','resume','cancel'].map(name=>[name,async()=>calls.push(name)])); const request=async()=> {if(status==='disconnect')throw new Error('lost'); return {status,message:'declined'};}; if(['error','disconnect'].includes(status)) await assert.rejects(core.capture({id:1,url:'https://a.test/f'},api,request)); else await core.capture({id:1,url:'https://a.test/f'},api,request); assert.deepEqual(calls,status==='queued'?['pause','cancel']:['pause','resume']); });
 test('capture ignores browser local files',async()=>assert.equal(await core.capture({url:'blob:https://a.test/id'}, {},()=>{}),'ignored'));
@@ -14,7 +14,7 @@ import {readFileSync,mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import vm from 'node:vm';
 test('universal bookmarklet hands off ordinary HTTP without randomUUID',()=> {
- const directory = mkdtempSync(tmpdir() + '/idm-bookmarklet-');
+ const directory = mkdtempSync(tmpdir() + '/mdm-bookmarklet-');
  try {
   execFileSync('python3',[new URL('../../scripts/build_extensions.py',import.meta.url).pathname,'--output',directory]);
   const source = readFileSync(directory + '/bookmarklet.txt','utf8').replace(/^javascript:/,'');
@@ -22,7 +22,7 @@ test('universal bookmarklet hands off ordinary HTTP without randomUUID',()=> {
   const context = {location,getSelection:()=>null,document:{querySelectorAll:()=>[]},prompt:()=>location.href,crypto:{getRandomValues:bytes=>{bytes.fill(9);return bytes;}},TextEncoder,Uint8Array,btoa:value=>Buffer.from(value,'binary').toString('base64'),alert:()=>assert.fail('unexpected alert')};
   vm.runInNewContext(source,context);
   const url = new URL(location.href); const payload = JSON.parse(Buffer.from(url.searchParams.get('payload'),'base64url').toString());
-  assert.equal(url.protocol,'idm-mac:'); assert.match(payload.id,/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/); assert.equal(payload.links[0].url,'http://example.test/file');
+  assert.equal(url.protocol,'macdownloadmanager:'); assert.match(payload.id,/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/); assert.equal(payload.links[0].url,'http://example.test/file');
  } finally {rmSync(directory,{recursive:true,force:true});}
 });
 
@@ -51,7 +51,7 @@ test('recovery marker requires owning extension provenance',()=> { const guard=c
 test('media context menu opens a selector bound to the original tab',async()=> {
  let clicked;const opened=[];const event={addListener:()=>{}};
  const api={runtime:{id:'owner',getURL:path=>'chrome-extension://owner/'+path,onMessage:event,onInstalled:event},contextMenus:{onClicked:{addListener:fn=>{clicked=fn;}}},downloads:{onCreated:event},tabs:{create:async options=>opened.push(options)}};
- vm.runInNewContext(readFileSync(new URL('../../integrations/shared/background.js',import.meta.url),'utf8'),{browser:api,IDMCore:core});
+ vm.runInNewContext(readFileSync(new URL('../../integrations/shared/background.js',import.meta.url),'utf8'),{browser:api,DownloadCore:core});
  await clicked({menuItemId:'media'},{id:17,url:'https://a.test/page'});
  assert.deepEqual(JSON.parse(JSON.stringify(opened)),[{url:'chrome-extension://owner/popup.html?media=1&tabID=17'}]);
 });
@@ -59,7 +59,7 @@ test('media selector sends only chosen HTTP or Blob using original tab',async()=
  const nodes=new Map();const node=id=>{if(!nodes.has(id))nodes.set(id,{textContent:'',value:'0',replaceChildren(...children){this.children=children;},click(){return this.onclick?.();}});return nodes.get(id);};
  const calls=[];const media=[{url:'https://a.test/video.mp4'},{url:'blob:https://a.test/id'}];
  const api={tabs:{get:async id=>({id,url:'https://a.test/page'})},runtime:{sendMessage:async message=>{calls.push(message);if(message.action==='collect')return media;if(message.action==='status')return {capture:false,session:false};return {status:'queued'};}}};
- vm.runInNewContext(readFileSync(new URL('../../integrations/shared/popup.js',import.meta.url),'utf8'),{browser:api,IDMCore:core,URLSearchParams,location:{search:'?tabID=17'},document:{getElementById:node,createElement:()=>({})}});
+ vm.runInNewContext(readFileSync(new URL('../../integrations/shared/popup.js',import.meta.url),'utf8'),{browser:api,DownloadCore:core,URLSearchParams,location:{search:'?tabID=17'},document:{getElementById:node,createElement:()=>({})}});
  await node('media').onclick();
  assert.equal(node('choices').children.length,2);
  await node('chosen').onclick();node('choices').value='1';await node('chosen').onclick();

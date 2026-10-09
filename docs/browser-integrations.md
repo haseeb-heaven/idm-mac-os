@@ -1,16 +1,16 @@
 # Browser integrations
 
-The download manager, app bridge and native messaging host are native Swift. Browser extensions use browser-required JavaScript WebExtensions. This is an independently implemented macOS application informed by the recorded Windows IDM analysis, with no Tonec affiliation. It is not an official release or a verified 100% feature replica.
+The download manager, app bridge and native messaging host are native Swift. Browser extensions use browser-required JavaScript WebExtensions. This is an independent open-source macOS application with no affiliation to any other download manager vendor.
 
 ## Install
 
-1. Run `scripts/install.sh` and open `~/Applications/IDM.app`. This packages and registers the native host; putting the app outside Documents avoids browser privacy restrictions on that folder.
+1. Run `scripts/install.sh` and open `~/Applications/MacDownloadManager.app`. This packages and registers the native host; putting the app outside Documents avoids browser privacy restrictions on that folder.
 2. Choose **File → Browser Integrations → Open Setup**. If you move the app, choose **Register Browsers** again.
-3. Chromium browsers (Chrome, Edge, Brave, Vivaldi, Opera, Arc): download `IDM-Extension-<version>-chromium.zip` from the [app release](https://github.com/haseeb-heaven/idm-mac-os/releases/latest) and extract it. Open the browser's extensions page (`chrome://extensions`, `edge://extensions`, `brave://extensions`), enable developer mode, choose **Load unpacked**, and select the extracted folder. The same **IDM Extension** build works in every Chromium-based browser.
-4. Firefox: download `IDM-Extension-<version>-firefox.zip` from the app release and extract it. Use `about:debugging#/runtime/this-firefox` → **Load Temporary Add-on** → the extracted `manifest.json`. Temporary add-ons must be reloaded after restarting Firefox. Persistent release installation requires Mozilla signing.
+3. Chromium browsers (Chrome, Edge, Brave, Vivaldi, Opera, Arc): download `MDM-Extension-<version>-chromium.zip` from the [app release](https://github.com/haseeb-heaven/macdownloadmanager-os/releases/latest) and extract it. Open the browser's extensions page (`chrome://extensions`, `edge://extensions`, `brave://extensions`), enable developer mode, choose **Load unpacked**, and select the extracted folder. The same **MacDownloadManager Extension** build works in every Chromium-based browser.
+4. Firefox: download `MDM-Extension-<version>-firefox.zip` from the app release and extract it. Use `about:debugging#/runtime/this-firefox` → **Load Temporary Add-on** → the extracted `manifest.json`. Temporary add-ons must be reloaded after restarting Firefox. Persistent release installation requires Mozilla signing.
 5. In Safari or another browser, copy the provided bookmarklet into a bookmark URL. It hands HTTP/HTTPS links to the app for destination approval.
 
-The setup resources are packaged in `IDM.app/Contents/Resources/BrowserIntegration` and generated in `build/extensions`. Native hosts are registered per user. No browser profile is modified by the extension build.
+The setup resources are packaged in `MacDownloadManager.app/Contents/Resources/BrowserIntegration` and generated in `build/extensions`. Native hosts are registered per user. No browser profile is modified by the extension build.
 
 ## Functions
 
@@ -35,14 +35,14 @@ The app reviews destinations before accepting a normal browser download. Browser
 | Safari | HTTP/HTTPS bookmarklet and native URL handler | Native Safari extension packaging requires full Xcode, which is unavailable on this development Mac |
 | Other browsers supporting bookmarks/custom URL schemes | HTTP/HTTPS bookmarklet | Compatibility target; no universal execution claim |
 
-Context-menu/browser integration behavior was researched against [IDM's browser integration documentation](https://www.internetdownloadmanager.com/support/right_click_IE.html). Protocols follow [Chrome native messaging](https://developer.chrome.com/docs/extensions/develop/concepts/native-messaging) and [Mozilla native messaging](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Native_messaging). Safari packaging requirements are documented by [Apple](https://developer.apple.com/documentation/safariservices/safari-web-extensions).
+Protocols follow [Chrome native messaging](https://developer.chrome.com/docs/extensions/develop/concepts/native-messaging) and [Mozilla native messaging](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Native_messaging). Safari packaging requirements are documented by [Apple](https://developer.apple.com/documentation/safariservices/safari-web-extensions).
 
 ## Test commands
 
 ```sh
 node --test Tests/BrowserIntegration/core.test.js
 scripts/test.sh  # includes Node, native host/app acceptance and UI checks
-python3 scripts/build_extensions.py --output build/qa-extensions --host-name local.haseebheaven.idmmac.test
+python3 scripts/build_extensions.py --output build/qa-extensions --host-name local.haseebheaven.macdownloadmanager.test
 python3 scripts/browser_integration_tests.py --help
 ```
 

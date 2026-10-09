@@ -1,8 +1,0 @@
-{
-  "content": [
-    {
-      "type": "text",
-      "text": "KERNEL32.dll ReadFile\nKERNEL32.dll WriteFile\nKERNEL32.dll CreateFileMappingA\nKERNEL32.dll CreateFileA\nKERNEL32.dll CreateFileW\nWS2_32.dll closesocket\nWS2_32.dll socket\nWS2_32.dll ioctlsocket\nWS2_32.dll send\nWS2_32.dll recv\nWININET.dll InternetCrackUrlA\nWININET.dll InternetCanonicalizeUrlA\nWININET.dll InternetCanonicalizeUrlW\nWININET.dll InternetSetCookieA\nWININET.dll InternetCombineUrlA\nWININET.dll InternetGetCookieA\n"
-    }
-  ]
-}

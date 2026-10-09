@@ -18,7 +18,7 @@ def run(app, directory):
     config = directory / 'browser-bridge.json'
     if config.exists():
         raise RuntimeError('Use a fresh test directory')
-    process = subprocess.Popen([str(app / 'Contents/MacOS/IDMMac'), '--browser-qa', str(directory)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    process = subprocess.Popen([str(app / 'Contents/MacOS/MacDownloadManager'), '--browser-qa', str(directory)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     host = None
     checks = []
     try:
@@ -29,7 +29,7 @@ def run(app, directory):
         if not config.exists():
             raise TimeoutError('Bridge did not start')
         assert config.stat().st_mode & 0o777 == 0o600
-        host = subprocess.Popen([str(app / 'Contents/MacOS/IDMBrowserHost'), '--bridge-config', str(config), 'chrome-extension://amdlggemepjploaameacboladklhlndk/'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        host = subprocess.Popen([str(app / 'Contents/MacOS/MacDownloadManagerHost'), '--bridge-config', str(config), 'chrome-extension://amdlggemepjploaameacboladklhlndk/'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         def request(op, **fields):
             ident = str(uuid.uuid4())
             message = json.dumps(dict(id=ident, op=op, **fields)).encode()
@@ -73,10 +73,10 @@ def run(app, directory):
             stream = str(uuid.uuid4()); link['filename'] = 'abort.bin'
             assert request('blobBegin', streamID=stream, links=[link])['status'] == 'accepted'
             assert request('blobChunk', streamID=stream, sequence=1, data='YQ==')['status'] == 'error'
-            assert not list((directory / 'downloads').glob('.idm-blob-*'))
+            assert not list((directory / 'downloads').glob('.mdm-blob-*'))
             assert not (directory / 'downloads/abort.bin').exists()
             checks.append('blob-sequence-error-cleans-staging')
-        denied = subprocess.run([str(app / 'Contents/MacOS/IDMBrowserHost'), 'chrome-extension://unauthorized/'], input=b'', stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=5)
+        denied = subprocess.run([str(app / 'Contents/MacOS/MacDownloadManagerHost'), 'chrome-extension://unauthorized/'], input=b'', stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=5)
         assert denied.returncode == 2
         checks.append('unrecognized-extension-rejected')
         report = dict(checks=checks, passed=True, fixtureSHA256=SHA256)

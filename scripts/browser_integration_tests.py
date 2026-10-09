@@ -18,14 +18,14 @@ def prepare_extension(source, qa):
     """Stage diagnostic controls privately; never ship test controls to users."""
     extension = qa/'extension'
     shutil.copytree(Path(source).resolve(), extension)
-    (extension/'config.js').write_text('globalThis.IDM_CONFIG = {"hostName":"local.haseebheaven.idmmac.test"};\n')
-    (extension/'qa.html').write_text('''<!doctype html><html><head><meta charset="utf-8"><title>IDM integration diagnostics</title></head><body><h1>IDM integration diagnostics</h1><label>Diagnostic site origin <input id="origin" value="http://127.0.0.1/*"></label><button id="grant">Allow diagnostic site</button><button id="grant-session">Allow diagnostic cookies</button><button id="ping">Check host</button><pre id="result"></pre><script src="core.js"></script><script src="qa.js"></script></body></html>''')
+    (extension/'config.js').write_text('globalThis.MDM_CONFIG = {"hostName":"local.haseebheaven.macdownloadmanager.test"};\n')
+    (extension/'qa.html').write_text('''<!doctype html><html><head><meta charset="utf-8"><title>MacDownloadManager integration diagnostics</title></head><body><h1>MacDownloadManager integration diagnostics</h1><label>Diagnostic site origin <input id="origin" value="http://127.0.0.1/*"></label><button id="grant">Allow diagnostic site</button><button id="grant-session">Allow diagnostic cookies</button><button id="ping">Check host</button><pre id="result"></pre><script src="core.js"></script><script src="qa.js"></script></body></html>''')
     (extension/'qa.js').write_text('''const api = globalThis.browser || chrome;
-window.IDM_QA = async message => { const result = await api.runtime.sendMessage(message); document.getElementById('result').textContent = JSON.stringify(result); return result; };
-window.IDM_QA_SETTINGS = settings => api.storage.local.set(settings);
-document.getElementById('ping').onclick = () => window.IDM_QA({action:'ping'});
-document.getElementById('grant').onclick = async () => { const granted = await api.permissions.request({origins:[IDMCore.permissionPattern(document.getElementById('origin').value)]}); document.getElementById('result').textContent = JSON.stringify({granted}); };
-document.getElementById('grant-session').onclick = async () => { const granted = await api.permissions.request({permissions:['cookies'],origins:[IDMCore.permissionPattern(document.getElementById('origin').value)]}); document.getElementById('result').textContent = JSON.stringify({granted}); };
+window.MDM_QA = async message => { const result = await api.runtime.sendMessage(message); document.getElementById('result').textContent = JSON.stringify(result); return result; };
+window.MDM_QA_SETTINGS = settings => api.storage.local.set(settings);
+document.getElementById('ping').onclick = () => window.MDM_QA({action:'ping'});
+document.getElementById('grant').onclick = async () => { const granted = await api.permissions.request({origins:[DownloadCore.permissionPattern(document.getElementById('origin').value)]}); document.getElementById('result').textContent = JSON.stringify({granted}); };
+document.getElementById('grant-session').onclick = async () => { const granted = await api.permissions.request({permissions:['cookies'],origins:[DownloadCore.permissionPattern(document.getElementById('origin').value)]}); document.getElementById('result').textContent = JSON.stringify({granted}); };
 ''')
     return extension
 
@@ -38,7 +38,7 @@ def matching_final_files(directory, previous, native=True):
     completed=completed_native_destinations(directory) if native else None
     return [path for path in directory.rglob('*')
             if path.is_file() and path not in previous
-            and not any(part.startswith('.idm-blob') for part in path.parts)
+            and not any(part.startswith('.mdm-blob') for part in path.parts)
             and not path.name.endswith(('.crdownload','.part'))
             and (completed is None or path.resolve() in completed)
             and hashlib.sha256(path.read_bytes()).hexdigest()==SHA256]
@@ -99,14 +99,14 @@ def run(args):
     hosts = profile/'NativeMessagingHosts'
     hosts.mkdir(parents=True,exist_ok=True)
     launcher = qa/'native-host'
-    launcher.write_text('#!'+sys.executable+'\nimport os,sys,json\nopen('+repr(str(qa/'host-arguments.json'))+',"w").write(json.dumps(sys.argv))\nos.execv('+repr(str(app/'Contents/MacOS/IDMBrowserHost'))+', ['+repr(str(app/'Contents/MacOS/IDMBrowserHost'))+', "--bridge-config", '+repr(str(qa/'browser-bridge.json'))+', "--app", '+repr(str(app))+']+sys.argv[1:])\n')
+    launcher.write_text('#!'+sys.executable+'\nimport os,sys,json\nopen('+repr(str(qa/'host-arguments.json'))+',"w").write(json.dumps(sys.argv))\nos.execv('+repr(str(app/'Contents/MacOS/MacDownloadManagerHost'))+', ['+repr(str(app/'Contents/MacOS/MacDownloadManagerHost'))+', "--bridge-config", '+repr(str(qa/'browser-bridge.json'))+', "--app", '+repr(str(app))+']+sys.argv[1:])\n')
     launcher.chmod(0o700)
-    host_name='local.haseebheaven.idmmac.test'
-    (hosts/(host_name+'.json')).write_text(json.dumps({'name':host_name,'description':'Isolated IDM browser QA','path':str(launcher),'type':'stdio','allowed_origins':['chrome-extension://'+EXTENSION_ID+'/']}))
+    host_name='local.haseebheaven.macdownloadmanager.test'
+    (hosts/(host_name+'.json')).write_text(json.dumps({'name':host_name,'description':'Isolated MacDownloadManager browser QA','path':str(launcher),'type':'stdio','allowed_origins':['chrome-extension://'+EXTENSION_ID+'/']}))
     report={'browser':'Chrome for Testing','checks':[]}
     processes=[]
     try:
-        processes.append(subprocess.Popen([str(app/'Contents/MacOS/IDMMac'),'--browser-qa',str(qa)],stdout=(qa/'app.stdout').open('w'),stderr=(qa/'app.stderr').open('w')))
+        processes.append(subprocess.Popen([str(app/'Contents/MacOS/MacDownloadManager'),'--browser-qa',str(qa)],stdout=(qa/'app.stdout').open('w'),stderr=(qa/'app.stderr').open('w')))
         deadline=time.monotonic()+30
         while not (qa/'browser-bridge.json').exists():
             if time.monotonic()>deadline: raise TimeoutError('App bridge config missing')
@@ -134,14 +134,14 @@ def run(args):
             control=CDP(wait_target(port,'/qa.html')['webSocketDebuggerUrl'])
             control.call('Page.navigate',{'url':'chrome-extension://'+EXTENSION_ID+'/qa.html'})
             deadline=time.monotonic()+20
-            while not control.evaluate('typeof IDM_QA === "function"'):
+            while not control.evaluate('typeof MDM_QA === "function"'):
                 if time.monotonic()>deadline:raise TimeoutError(control.evaluate('document.body.innerText.slice(0,500)'))
                 time.sleep(.2)
             control.call('Page.bringToFront')
             tab_id=control.evaluate('chrome.tabs.query({}).then(t=>t.find(x=>x.url?.startsWith('+json.dumps(fixture.url)+')).id)')
             def check(name,action,download=False):
                 previous=set(downloads.rglob('*'))
-                result=control.evaluate('IDM_QA('+json.dumps(action)+')')
+                result=control.evaluate('MDM_QA('+json.dumps(action)+')')
                 if isinstance(result,dict) and result.get('error'): raise AssertionError(result)
                 item={'name':name,'response':result}
                 if download:item['files']=[str(p) for p in wait_files(downloads,previous,int(download))];item['sha256']=SHA256
@@ -152,15 +152,15 @@ def run(args):
             page=CDP(tab['webSocketDebuggerUrl'])
             page.evaluate('fetch("/cookie").then(r=>r.text())')
             blob=page.evaluate('fixtureBlobURL')
-            collected=control.evaluate('IDM_QA('+json.dumps({'action':'collect','tabID':tab_id,'kind':'all'})+')')
+            collected=control.evaluate('MDM_QA('+json.dumps({'action':'collect','tabID':tab_id,'kind':'all'})+')')
             if not any(x['url'].startswith('blob:') for x in collected):raise AssertionError('Fixture Blob link missing')
             check('mixed-http-blob-links',{'action':'download','tabID':tab_id,'links':collected},2)
             check('live-blob',{'action':'blob','tabID':tab_id,'url':blob,'filename':'blob.bin'},True)
             expired=page.evaluate('expiredBlobURL')
-            result=control.evaluate('IDM_QA('+json.dumps({'action':'blob','tabID':tab_id,'url':expired,'filename':'expired.bin'})+')')
+            result=control.evaluate('MDM_QA('+json.dumps({'action':'blob','tabID':tab_id,'url':expired,'filename':'expired.bin'})+')')
             if not result.get('error'): raise AssertionError('Expired blob did not return a visible error')
             report['checks'].append({'name':'expired-blob','response':result})
-            media=control.evaluate('IDM_QA('+json.dumps({'action':'collect','tabID':tab_id,'kind':'media'})+')')
+            media=control.evaluate('MDM_QA('+json.dumps({'action':'collect','tabID':tab_id,'kind':'media'})+')')
             if not isinstance(media,list) or {x['url'] for x in media} != {fixture.url+'/video.mp4',fixture.url+'/audio.mp3'}:raise AssertionError(media)
             report['checks'].append({'name':'media-selection','response':media})
             # Invoke the registered context-menu callback inside the real worker,
@@ -185,7 +185,7 @@ def run(args):
             chooser.call('Page.close');chooser.close()
             browser_downloads=qa/'browser-downloads';browser_downloads.mkdir(exist_ok=True)
             control.call('Browser.setDownloadBehavior',{'behavior':'allow','downloadPath':str(browser_downloads)})
-            control.evaluate('IDM_QA_SETTINGS({capture:true})')
+            control.evaluate('MDM_QA_SETTINGS({capture:true})')
             previous=set(downloads.rglob('*'))
             captured_id=control.evaluate('chrome.downloads.download({url:'+json.dumps(fixture.url+'/capture.bin')+'})')
             captured_file=wait_file(downloads,previous)
@@ -207,9 +207,9 @@ def run(args):
             time.sleep(1)
             granted=control.evaluate('chrome.permissions.contains({permissions:["cookies"],origins:["http://127.0.0.1/*"]})')
             if granted:
-                control.evaluate('IDM_QA_SETTINGS({capture:false,session:true})')
+                control.evaluate('MDM_QA_SETTINGS({capture:false,session:true})')
                 check('cookie-protected-download',{'action':'download','tabID':tab_id,'links':[{'url':fixture.url+'/protected.bin'}]},True)
-                control.evaluate('IDM_QA_SETTINGS({session:false})')
+                control.evaluate('MDM_QA_SETTINGS({session:false})')
             else:report['limitations']=['Chromium optional cookie permission UI did not complete during automation']
             page.close(); control.close()
     except Exception as error:
@@ -233,13 +233,13 @@ def run_firefox(args):
     downloads=qa/'downloads';downloads.mkdir(exist_ok=True)
     app=Path(args.app).resolve()
     launcher=qa/'firefox-native-host'
-    host=str(app/'Contents/MacOS/IDMBrowserHost')
+    host=str(app/'Contents/MacOS/MacDownloadManagerHost')
     launcher.write_text('#!'+sys.executable+'\nimport os,sys,json\nopen('+repr(str(qa/'host-arguments.json'))+',"w").write(json.dumps(sys.argv))\nos.execv('+repr(host)+', ['+repr(host)+', "--bridge-config", '+repr(str(qa/'browser-bridge.json'))+', "--app", '+repr(str(app))+']+sys.argv[1:])\n');launcher.chmod(0o700)
-    host_name='local.haseebheaven.idmmac.test'
+    host_name='local.haseebheaven.macdownloadmanager.test'
     manifest=Path.home()/'Library/Application Support/Mozilla/NativeMessagingHosts'/(host_name+'.json')
     if manifest.exists():raise RuntimeError('Refusing to overwrite existing QA native registration')
     manifest.parent.mkdir(parents=True,exist_ok=True)
-    manifest.write_text(json.dumps({'name':host_name,'description':'Isolated IDM browser QA','path':str(launcher),'type':'stdio','allowed_extensions':['idm-mac@haseeb-heaven']}))
+    manifest.write_text(json.dumps({'name':host_name,'description':'Isolated MacDownloadManager browser QA','path':str(launcher),'type':'stdio','allowed_extensions':['macdownloadmanager@haseeb-heaven']}))
     extension=prepare_extension(args.extension, qa)
     archive=qa/'firefox-extension.xpi'
     with zipfile.ZipFile(archive,'w') as bundle:
@@ -248,7 +248,7 @@ def run_firefox(args):
     with socket.socket() as probe:probe.bind(('127.0.0.1',0));port=probe.getsockname()[1]
     processes=[];driver=WebDriver(port);report={'browser':'Firefox','checks':[]}
     try:
-        processes.append(subprocess.Popen([str(app/'Contents/MacOS/IDMMac'),'--browser-qa',str(qa)],stdout=(qa/'app.stdout').open('w'),stderr=(qa/'app.stderr').open('w')))
+        processes.append(subprocess.Popen([str(app/'Contents/MacOS/MacDownloadManager'),'--browser-qa',str(qa)],stdout=(qa/'app.stdout').open('w'),stderr=(qa/'app.stderr').open('w')))
         processes.append(subprocess.Popen([args.geckodriver,'--allow-system-access','--port',str(port)],stdout=(qa/'geckodriver.stdout').open('w'),stderr=(qa/'geckodriver.stderr').open('w')))
         time.sleep(2)
         profile=qa/'firefox-profile';profile.mkdir(exist_ok=True)
@@ -265,7 +265,7 @@ def run_firefox(args):
             tab_id=driver.evaluate('browser.tabs.query({}).then(t=>t.find(x=>x.url?.startsWith('+json.dumps(fixture.url)+')).id)')
             def check(name,action,download=False):
                 previous=set(downloads.rglob('*'))
-                result=driver.evaluate('IDM_QA('+json.dumps(action)+')')
+                result=driver.evaluate('MDM_QA('+json.dumps(action)+')')
                 if isinstance(result,dict) and result.get('error'):raise AssertionError(result)
                 item={'name':name,'response':result}
                 if download:item.update(files=[str(p) for p in wait_files(downloads,previous,int(download))],sha256=SHA256)
@@ -273,15 +273,15 @@ def run_firefox(args):
             check('native-ping',{'action':'ping'})
             check('http-download',{'action':'download','tabID':tab_id,'links':[{'url':fixture.url+'/file.bin'}]},True)
             driver.grant('#grant-session')
-            driver.evaluate('IDM_QA_SETTINGS({session:true})')
+            driver.evaluate('MDM_QA_SETTINGS({session:true})')
             check('cookie-protected-download',{'action':'download','tabID':tab_id,'links':[{'url':fixture.url+'/protected.bin'}]},True)
-            driver.evaluate('IDM_QA_SETTINGS({session:false})')
+            driver.evaluate('MDM_QA_SETTINGS({session:false})')
             check('batch-dedup',{'action':'download','tabID':tab_id,'links':[{'url':fixture.url+'/second.bin'},{'url':fixture.url+'/third.bin'},{'url':fixture.url+'/second.bin'}]},2)
-            collected=driver.evaluate('IDM_QA('+json.dumps({'action':'collect','tabID':tab_id,'kind':'all'})+')')
+            collected=driver.evaluate('MDM_QA('+json.dumps({'action':'collect','tabID':tab_id,'kind':'all'})+')')
             if not any(x['url'].startswith('blob:') for x in collected):raise AssertionError('Fixture Blob link missing')
             check('mixed-http-blob-links',{'action':'download','tabID':tab_id,'links':collected},2)
             check('live-blob',{'action':'blob','tabID':tab_id,'url':blob,'filename':'blob.bin'},True)
-            result=driver.evaluate('IDM_QA('+json.dumps({'action':'blob','tabID':tab_id,'url':expired,'filename':'expired.bin'})+')')
+            result=driver.evaluate('MDM_QA('+json.dumps({'action':'blob','tabID':tab_id,'url':expired,'filename':'expired.bin'})+')')
             if not result.get('error'):raise AssertionError('Expired blob did not return an error')
             report['checks'].append({'name':'expired-blob','response':result})
             check('media-selection',{'action':'collect','tabID':tab_id,'kind':'media'})
@@ -322,7 +322,7 @@ def run_firefox(args):
                 raise
             report['checks'].append({'name':'media-context-menu-choice-http-and-blob','files':[str(http_file),str(blob_file)],'sha256':SHA256})
             driver.request('DELETE',driver.path('/window'));driver.request('POST',driver.path('/window'),{'handle':qa_handle})
-            driver.evaluate('IDM_QA_SETTINGS({capture:true,session:false})')
+            driver.evaluate('MDM_QA_SETTINGS({capture:true,session:false})')
             previous=set(downloads.rglob('*'))
             captured_id=driver.evaluate('browser.downloads.download({url:'+json.dumps(fixture.url+'/capture.bin')+',saveAs:false})')
             captured_file=wait_file(downloads,previous)
@@ -337,7 +337,7 @@ def run_firefox(args):
                 try:fallback_file=wait_file(browser_downloads,previous,native=False)
                 except TimeoutError:
                     report['fallbackDiagnostic']=driver.evaluate('browser.downloads.search({id:'+str(fallback_id)+'}).then(x=>x[0])')
-                    report['extensionStatus']=driver.evaluate('IDM_QA({action:"status"})')
+                    report['extensionStatus']=driver.evaluate('MDM_QA({action:"status"})')
                     raise
                 deadline=time.monotonic()+10
                 while True:
@@ -370,7 +370,7 @@ def run_safari(args):
     if (qa/'browser-bridge.json').exists():raise RuntimeError('Use a fresh QA directory')
     downloads=qa/'downloads';downloads.mkdir(exist_ok=True)
     app=Path(args.app).resolve()
-    process=subprocess.Popen([str(app/'Contents/MacOS/IDMMac'),'--browser-qa',str(qa)],stdout=(qa/'app.stdout').open('w'),stderr=(qa/'app.stderr').open('w'))
+    process=subprocess.Popen([str(app/'Contents/MacOS/MacDownloadManager'),'--browser-qa',str(qa)],stdout=(qa/'app.stdout').open('w'),stderr=(qa/'app.stderr').open('w'))
     window=None;report={'browser':'Safari','checks':[]}
     try:
         time.sleep(2)

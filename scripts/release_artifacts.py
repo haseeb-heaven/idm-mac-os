@@ -16,11 +16,11 @@ def digest(path):
 subprocess.run(['scripts/package.sh','--arch','universal'],cwd=ROOT,check=True)
 artifacts=[]
 for architecture in ('arm64','x86_64','universal'):
-    source_app=OUT/architecture/'IDM.app'
+    source_app=OUT/architecture/'MacDownloadManager.app'
     # FileProvider may reattach FinderInfo in Documents after packaging. Perform
     # archive verification on a metadata-free staging copy, outside Documents.
-    staging=tempfile.TemporaryDirectory(prefix='idm-release-stage-',dir='/private/tmp')
-    app=Path(staging.name)/'IDM.app'
+    staging=tempfile.TemporaryDirectory(prefix='mdm-release-stage-',dir='/private/tmp')
+    app=Path(staging.name)/'MacDownloadManager.app'
     command('ditto','--norsrc','--noextattr',str(source_app),str(app))
     command('xattr','-cr',str(app))
     expected={'arm64','x86_64'} if architecture=='universal' else {architecture}
@@ -29,7 +29,7 @@ for architecture in ('arm64','x86_64','universal'):
     assert plist['LSMinimumSystemVersion']==VERSION['minimumMacOS']
     command('codesign','--verify','--strict',str(app))
     binaries=[]
-    for product in ('IDMMac','IDMBrowserHost'):
+    for product in ('MacDownloadManager','MacDownloadManagerHost'):
         binary=app/'Contents/MacOS'/product
         architectures=set(command('lipo','-archs',str(binary)).split())
         assert architectures==expected,(product,architectures,expected)
@@ -38,25 +38,25 @@ for architecture in ('arm64','x86_64','universal'):
         minimums=re.findall(r'\bminos\s+([\d.]+)',load_commands)
         assert minimums and all(x.startswith('13.') for x in minimums),(product,minimums)
         binaries.append({'name':product,'architectures':sorted(architectures),'sha256':digest(binary),'minimumMacOS':minimums,'signature':'ad hoc; strict verification passed'})
-    archive=OUT/f'IDM-{VERSION["version"]}-{architecture}.zip'
+    archive=OUT/f'MDM-{VERSION["version"]}-{architecture}.zip'
     # No resource forks or quarantine metadata are distributed in release archives.
     command('ditto','-c','-k','--norsrc','--noextattr','--keepParent',str(app),str(archive))
-    with tempfile.TemporaryDirectory(prefix='idm-release-verify-',dir='/private/tmp') as extraction:
+    with tempfile.TemporaryDirectory(prefix='mdm-release-verify-',dir='/private/tmp') as extraction:
         command('ditto','-x','-k','--norsrc','--noextattr',str(archive),extraction)
         extracted=Path(extraction)/app.name
         command('codesign','--verify','--strict',str(extracted))
-        for product in ('IDMMac','IDMBrowserHost'):
+        for product in ('MacDownloadManager','MacDownloadManagerHost'):
             assert digest(extracted/'Contents/MacOS'/product)==digest(app/'Contents/MacOS'/product)
     artifacts.append({'filename':archive.name,'bytes':archive.stat().st_size,'sha256':digest(archive),'binaries':binaries})
     staging.cleanup()
-# IDM Extension ships beside the app archives so every major browser can load it.
+# MacDownloadManager Extension ships beside the app archives so every major browser can load it.
 import shutil
 for browser in ('chromium','firefox'):
     source=ROOT/'build/extensions'/browser
     extension_manifest=json.loads((source/'manifest.json').read_text())
-    assert extension_manifest['name']=='IDM Extension',(browser,extension_manifest.get('name'))
-    archive=OUT/f'IDM-Extension-{VERSION["version"]}-{browser}.zip'
-    with tempfile.TemporaryDirectory(prefix='idm-ext-stage-',dir='/private/tmp') as staging:
+    assert extension_manifest['name']=='MacDownloadManager Extension',(browser,extension_manifest.get('name'))
+    archive=OUT/f'MDM-Extension-{VERSION["version"]}-{browser}.zip'
+    with tempfile.TemporaryDirectory(prefix='mdm-ext-stage-',dir='/private/tmp') as staging:
         staged=Path(staging)/browser
         shutil.copytree(source,staged)
         # No resource forks or quarantine metadata are distributed in release archives.

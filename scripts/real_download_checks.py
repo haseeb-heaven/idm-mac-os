@@ -12,7 +12,7 @@ for name,url in links.items():
  print('RUN '+name,flush=True)
  reference=root/'build'/f'{name.replace(" ","-")}-reference.dmg'
  curl=subprocess.run(['curl','-fsSL','--max-time','300',url,'-o',str(reference)],capture_output=True,text=True)
- args=[str(root/'.build/debug/IDMCoreChecks'),'--url',url]
+ args=[str(root/'.build/debug/DownloadCoreChecks'),'--url',url]
  if curl.returncode==0:
   with reference.open('rb') as file:hash=hashlib.file_digest(file,'sha256').hexdigest()
   args+=['--sha256',hash]

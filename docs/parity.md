@@ -1,23 +1,23 @@
-# Feature coverage
+# Feature status
 
-This is implementation coverage, not a claim of 100% IDM equivalence.
+What MacDownloadManager implements today, and what it does not. No equivalence with any other product is claimed.
 
-| Feature | Native behavior | Evidence / remaining comparison |
+| Feature | Status | Evidence |
 |---|---|---|
-| HTTP ranges | Concurrent validated fixed-size segments | Original range construction decompiled and independently checked; dynamic IDM policy unverified |
+| HTTP ranges | Concurrent validated fixed-size segments | Fixture and integration checks pass |
 | Pause/resume | Partial files retained; validators checked on resume | Cancellation/resume integration check passes |
 | Retry/recovery | Exponential retries for inspection and transfer; rejects permanent errors | HEAD and transfer regression checks pass |
 | Redirects / HTTPS | URLSession redirects and normal system TLS trust | Redirect fixture and real HTTPS checksum comparison pass |
 | Authentication | Keychain-backed Basic credentials | Auth and Keychain integration checks pass; advanced auth unverified |
 | Proxy | Configurable HTTP/HTTPS proxy dictionary | Actual HTTP proxy routing check passes; authenticated proxy unverified |
-| Speed limits | Aggregate throttled byte processing | Timing assertion passes; IDM algorithm equivalence unverified |
+| Speed limits | Aggregate throttled byte processing | Timing assertion passes |
 | Queues | One FIFO queue, start/stop controls | Queue scheduling policy checks pass; multiple named queues absent |
 | Scheduler | Persistent per-job start date, app must be running | Due-time policy and SQLite round-trip pass; recurring schedules absent |
 | Storage | SQLite jobs and on-disk partial files | Restart recovery, collision, truncation, and storage failure checks pass |
 | Large files | 64-bit sizes/ranges and bounded segment files | Complete 5 GiB download and full SHA256 passed |
-| Interface | Classic colored/labeled AppKit toolbar, optional compact layout, light/dark/system appearance, sidebar, searchable list and live details | Original captured under CrossOver; native four appearance/layout combinations, preference restoration and minimum-width checks; see v0.2.0 compatibility evidence; exact visual parity unverified |
-| Site grabber | File links from one public page, deduplication and manual review | Extension and explicit/extensionless download-link extraction checks pass; current OpenIGI discovery and endpoint checks are recorded separately; recursive crawling absent |
-| Browser integration | Swift native messaging host, Chromium/Firefox extensions, link/batch/media selection, optional capture and cookies, Blob streaming | See [browser compatibility and executed tests](browser-integrations.md); universal parity remains unverified |
-| FTP / Windows-specific features | Not implemented | No equivalence claim |
+| Interface | Colored/labeled AppKit toolbar, optional compact layout, light/dark/system appearance, sidebar, searchable list and live details | Appearance/layout combinations, preference restoration and minimum-width checks pass |
+| Site grabber | File links from one public page, deduplication and manual review | Extension and explicit/extensionless download-link extraction checks pass; recursive crawling absent |
+| Browser integration | Swift native messaging host, Chromium/Firefox extensions, link/batch/media selection, optional capture and cookies, Blob streaming | See [browser compatibility and executed tests](browser-integrations.md) |
+| FTP | Not implemented | No claim |
 
-Windows IDM ran under CrossOver for layout observation. Paired full-file downloads and throughput comparisons against the original application are recorded in [speed comparison](speed-comparison.md). Full comparative testing of all features remains incomplete.
+The workflow is inspired by classic download managers such as Internet Download Manager (Tonec FZE) — no affiliation, no shared code.

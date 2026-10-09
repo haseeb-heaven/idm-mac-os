@@ -28,8 +28,8 @@ def main():
             else:
                 owned_artifacts = pathlib.Path(tempfile.mkdtemp(prefix=f"native-{target}-",dir=args.output))
                 environment = os.environ.copy()
-                environment.update(IDM_OPENIGI_OS=target, IDM_OPENIGI_OUTPUT=str(native_path.resolve()),IDM_OPENIGI_WORK_DIRECTORY=str(owned_artifacts.resolve()))
-                native = subprocess.run([str(root / '.build/debug/IDMCoreChecks')], env=environment, cwd=root,
+                environment.update(MDM_OPENIGI_OS=target, MDM_OPENIGI_OUTPUT=str(native_path.resolve()),MDM_OPENIGI_WORK_DIRECTORY=str(owned_artifacts.resolve()))
+                native = subprocess.run([str(root / '.build/debug/DownloadCoreChecks')], env=environment, cwd=root,
                                         capture_output=True, text=True, timeout=args.timeout)
                 item['nativeExit'] = native.returncode
                 if native.returncode:

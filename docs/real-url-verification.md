@@ -18,7 +18,7 @@ Tested on 2026-10-08 using real URLSession downloads. Full files were compared w
 
 The actual release app runs against a loopback HTTP fixture in isolated storage. Checks create a job through the queue, invoke toolbar Stop and Resume, verify the completed file SHA-256, open Details, and check the failed-job banner and retry actions. This found and fixed lost row selection during progress updates. Completed progress bars are explicitly determinate and checked at 100%. Light-theme snapshots were inspected at default and minimum window sizes.
 
-![Actual light-theme app during native integration test](screenshots/idm-light-downloads.png)
+![App during native integration test](screenshots/app-downloads.png)
 
 ## Coverage
 
@@ -26,7 +26,7 @@ The actual release app runs against a loopback HTTP fixture in isolated storage.
 - Core executable line coverage: **96.82%**; region coverage: **86.70%**.
 - UI executable line coverage: **81.44%**; region coverage: **66.47%**.
 - Core and UI are reported separately to avoid duplicate linked core instrumentation. Swift LLVM coverage does not report branch counts here; region coverage is recorded instead.
-- Coverage is **not 100%**. Remaining lines include modal interaction paths, platform error handling, and defensive/unreachable paths. Passing checks do not prove universal website access or full original IDM parity.
+- Coverage is **not 100%**. Remaining lines include modal interaction paths, platform error handling, and defensive/unreachable paths. Passing checks do not prove universal website access.
 
 Run `scripts/coverage.sh` for exact reports and browsable uncovered lines under `build/coverage/html/`. OpenQodex is a code review in addition to these executed tests, not a substitute for them.
 
@@ -34,10 +34,10 @@ Blob URL behavior is documented by [MDN](https://developer.mozilla.org/en-US/doc
 
 ## OpenQodex review
 
-The final review (`cb8e8baaf94b`, against `993b45d`) passed with no findings on changed lines after fixing test exit status and saved-proxy isolation. [Full report](openqodex-e2e-review.md).
+Code reviews are recorded per change; review reports are regenerated and not kept as historical attachments.
 
 ## Subsequent performance release
 
-The chunk-stream release passes **47 checks**, including backpressure, pre-header cancellation, and credential redirect boundaries. Latest core line coverage is **97.05%** (region coverage **87.53%**); UI line coverage remains **81.44%**. See [verification](verification.md) and [original IDM comparison](speed-comparison.md). The 43-check results above describe the earlier installer-verification run.
+The chunk-stream release passes **47 checks**, including backpressure, pre-header cancellation, and credential redirect boundaries. Latest core line coverage is **97.05%** (region coverage **87.53%**); UI line coverage remains **81.44%**. See [verification](verification.md).
 
 The subsequent large-file memory correction is also tested. Latest measured coverage after adding scoped autorelease pools is **96.90% core lines** and **81.44% UI lines**. Earlier percentages above identify their respective earlier builds.

@@ -6,20 +6,20 @@ const settings = () => api.storage.local.get({capture:false,session:false});
 function report(message) { latestStatus = String(message); }
 function nativeRequest(request) {
   return new Promise((resolve,reject) => {
-    const port = api.runtime.connectNative(IDM_CONFIG.hostName);
+    const port = api.runtime.connectNative(MDM_CONFIG.hostName);
     const timer = setTimeout(() => { port.disconnect(); reject(new Error('Native app did not respond')); }, 120000);
-    port.onMessage.addListener(response => { clearTimeout(timer); port.disconnect(); try { if (response.id !== request.id) throw new Error('Native response identity mismatch'); resolve(IDMCore.nativeResponse(response)); } catch(e) { reject(e); } });
+    port.onMessage.addListener(response => { clearTimeout(timer); port.disconnect(); try { if (response.id !== request.id) throw new Error('Native response identity mismatch'); resolve(DownloadCore.nativeResponse(response)); } catch(e) { reject(e); } });
     port.onDisconnect.addListener(() => { clearTimeout(timer); reject(new Error(api.runtime.lastError?.message || 'Native host disconnected. Install the native host from Browser Integrations in the app.')); });
     port.postMessage(request);
   });
 }
 async function sessionLink(link, tab) {
-  const result = IDMCore.validateLink({...link,pageURL:tab?.url || link.pageURL});
+  const result = DownloadCore.validateLink({...link,pageURL:tab?.url || link.pageURL});
   if ((await settings()).session) {
-    const origin = IDMCore.permissionPattern(result.url);
+    const origin = DownloadCore.permissionPattern(result.url);
     if (!await api.permissions.contains({permissions:['cookies'],origins:[origin]})) throw new Error('Allow cookie and site access using the popup first');
     const stores = tab?.cookieStoreId ? [] : await api.cookies.getAllCookieStores();
-    const details = {url:result.url,storeId:IDMCore.cookieStore(tab,stores)};
+    const details = {url:result.url,storeId:DownloadCore.cookieStore(tab,stores)};
     const cookies = await api.cookies.getAll(details);
     result.headers = {'User-Agent':navigator.userAgent};
     if (cookies.length) result.headers.Cookie = cookies.map(c => `${c.name}=${c.value}`).join('; ');
@@ -27,7 +27,7 @@ async function sessionLink(link, tab) {
   }
   return result;
 }
-async function download(links,tab) { const clean = IDMCore.httpLinks(links); if (!clean.length) throw new Error('No HTTP or HTTPS links found'); const enriched = await Promise.all(clean.map(l => sessionLink(l,tab))); const response = await nativeRequest({id:crypto.randomUUID(),op:enriched.length === 1 ? 'download':'batch',links:enriched}); report(response.message || response.status); return response; }
+async function download(links,tab) { const clean = DownloadCore.httpLinks(links); if (!clean.length) throw new Error('No HTTP or HTTPS links found'); const enriched = await Promise.all(clean.map(l => sessionLink(l,tab))); const response = await nativeRequest({id:crypto.randomUUID(),op:enriched.length === 1 ? 'download':'batch',links:enriched}); report(response.message || response.status); return response; }
 function collectDocument(kind) {
   const selection = getSelection();
   const nodes = kind === 'media' ? [...document.querySelectorAll('video,audio,video source,audio source')] : [...document.querySelectorAll('a[href]')].filter(a => kind !== 'selection' || (selection && [...Array(selection.rangeCount)].some((_,i) => selection.getRangeAt(i).intersectsNode(a))));
@@ -49,8 +49,8 @@ async function blobReader(url,streamID) {
 async function blob(tab,url,filename) {
   if (blobSession) throw new Error('Another Blob import is active');
   if (!/^https?:/.test(tab.url) || !url.startsWith('blob:') || new URL(url.slice(5)).origin !== new URL(tab.url).origin) throw new Error('Blob must belong to the original HTTP or HTTPS tab');
-  const port = api.runtime.connectNative(IDM_CONFIG.hostName); let pending = null;
-  port.onMessage.addListener(r => { if (!pending || r.id !== pending.id) return; const p = pending; pending = null; clearTimeout(p.timer); try { p.resolve(IDMCore.nativeResponse(r)); } catch(e) { p.reject(e); } });
+  const port = api.runtime.connectNative(MDM_CONFIG.hostName); let pending = null;
+  port.onMessage.addListener(r => { if (!pending || r.id !== pending.id) return; const p = pending; pending = null; clearTimeout(p.timer); try { p.resolve(DownloadCore.nativeResponse(r)); } catch(e) { p.reject(e); } });
   port.onDisconnect.addListener(() => { if (pending) { clearTimeout(pending.timer); pending.reject(new Error('Native host disconnected during Blob import')); pending = null; } });
   const request = message => new Promise((resolve,reject) => { const id = crypto.randomUUID(); pending = {id,resolve,reject,timer:setTimeout(() => { pending = null; reject(new Error('Blob response timed out')); },120000)}; port.postMessage({id,...message}); });
   const streamID = crypto.randomUUID(); blobSession = {tabID:tab.id,streamID,request};
@@ -77,18 +77,18 @@ async function contextMenuClicked(info,tab) {
       // Keep the originating tab when the selector becomes the active tab.
       await api.tabs.create({url:api.runtime.getURL('popup.html') + '?media=1&tabID=' + tab.id});
     } else if (info.menuItemId === 'link') {
-      if (IDMCore.linkAction(info.linkUrl) === 'blob') await blob(tab,info.linkUrl,'browser-import.bin');
+      if (DownloadCore.linkAction(info.linkUrl) === 'blob') await blob(tab,info.linkUrl,'browser-import.bin');
       else await download([{url:info.linkUrl}],tab);
     } else await download(await collect(tab,info.menuItemId),tab);
   } catch(e) { report(e.message); }
 }
 api.contextMenus.onClicked.addListener(contextMenuClicked);
-const browserRecoveries = IDMCore.recoveryGuard();
+const browserRecoveries = DownloadCore.recoveryGuard();
 async function recoverBrowserDownload(item) {
   // Browser downloads API can recreate HTTP GET transfers; POST bodies are unavailable.
   const release = browserRecoveries.register(item);
   const options = {url:item.url,conflictAction:'uniquify',saveAs:false,incognito:Boolean(item.incognito)};
-  const filename = item.filename?.split(/[\\/]/).pop(); if (filename) options.filename = IDMCore.validateLink({url:item.url,filename}).filename.replace(/^\.+|\.+$/g,'') || 'browser-download';
+  const filename = item.filename?.split(/[\\/]/).pop(); if (filename) options.filename = DownloadCore.validateLink({url:item.url,filename}).filename.replace(/^\.+|\.+$/g,'') || 'browser-download';
   if (item.cookieStoreId && item.cookieStoreId !== 'firefox-default') options.cookieStoreId = item.cookieStoreId;
   try { await api.downloads.download(options); }
   catch(error) { release(); throw error; }
@@ -105,6 +105,6 @@ api.downloads.onCreated.addListener(async item => {
     if (globalThis.browser && item.cookieStoreId && item.cookieStoreId !== 'firefox-default' && !await api.permissions.contains({permissions:['cookies']})) {
       report('Automatic capture skipped: cookie permission is required to preserve this browser container'); return;
     }
-    await IDMCore.capture(item,api.downloads,link => download([link],null),globalThis.browser ? recoverBrowserDownload : undefined);
+    await DownloadCore.capture(item,api.downloads,link => download([link],null),globalThis.browser ? recoverBrowserDownload : undefined);
   } catch(error) { report(error.message); }
 });

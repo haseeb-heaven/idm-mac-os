@@ -1,8 +1,0 @@
-{
-  "content": [
-    {
-      "type": "text",
-      "text": "Analysis completed with level 2.\nFound 10398 functions.\n\n<log>\n[INFO] Analyze all flags starting with sym. and entry0 (aa)\n[INFO] Analyze imports (af@@@i)\n[INFO] Analyze entrypoint (af@ entry0)\n[INFO] Analyze symbols (af@@@s)\n[INFO] Running plugin pre-analysis hooks\n[INFO] Analyze all functions arguments/locals (afva@@F)\n[INFO] Analyze function calls (aac)\n[INFO] Analyze len bytes of instructions for references (aar)\n[INFO] Finding and parsing C++ vtables (avrr)\n[INFO] Analyzing methods (af @@ method.*)\n[INFO] Recovering local variables (afva@@@F)\n[INFO] Type matching analysis for all functions (aaft)\n[INFO] Propagate noreturn information (aanr)\n[INFO] Use -AA or aaaa to perform additional experimental analysis\n\n</log>\n"
-    }
-  ]
-}

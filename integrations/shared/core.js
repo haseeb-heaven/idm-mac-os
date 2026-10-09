@@ -38,5 +38,5 @@
     await resume(); return response.status;
   }
   const core = {MAX_LINKS,CHUNK_BYTES,validateLink,links,httpLinks,permissionPattern,linkAction,cookieStore,nativeResponse,recoveryGuard,capture};
-  root.IDMCore = core; if (typeof module !== 'undefined') module.exports = core;
+  root.DownloadCore = core; if (typeof module !== 'undefined') module.exports = core;
 })(globalThis);

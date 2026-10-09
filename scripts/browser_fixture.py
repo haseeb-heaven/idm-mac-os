@@ -14,8 +14,8 @@ from urllib.parse import urlsplit
 
 PAYLOAD = bytes(range(256)) * 4096
 SHA256 = hashlib.sha256(PAYLOAD).hexdigest()
-PAGE = '''<!doctype html><title>IDM browser QA</title>
-<a href="__SAFARI_HANDOFF__">Send fixture to IDM</a>
+PAGE = '''<!doctype html><title>MacDownloadManager browser QA</title>
+<a href="__SAFARI_HANDOFF__">Send fixture to MacDownloadManager</a>
 <a href="/file.bin" download="fixture.bin">File</a>
 <a href="/second.bin">Second</a><a href="/file.bin">Duplicate</a>
 <video src="/video.mp4"></video><audio src="/audio.mp3"></audio>
@@ -44,12 +44,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if path == '/':
             request={'id':str(uuid.uuid4()),'op':'download','links':[{'url':'http://127.0.0.1:'+str(self.server.server_port)+'/file.bin','filename':'safari.bin'}]}
             payload=base64.urlsafe_b64encode(json.dumps(request).encode()).decode().rstrip('=')
-            handoff='idm-mac://download?payload='+payload
+            handoff='macdownloadmanager://download?payload='+payload
             self.server.handoff_url=handoff
             body, kind = PAGE.replace('__SAFARI_HANDOFF__',html.escape(handoff)).encode(), 'text/html; charset=utf-8'
         elif path == '/cookie':
             body, kind = b'Cookie configured', 'text/plain'
-        elif path == '/protected.bin' and 'idm_qa=authorized' not in self.headers.get('Cookie', ''):
+        elif path == '/protected.bin' and 'mdm_qa=authorized' not in self.headers.get('Cookie', ''):
             self.send_error(403, 'Fixture session cookie required')
             return
         elif path in ('/file.bin', '/second.bin', '/third.bin', '/protected.bin', '/capture.bin', '/fallback.bin', '/video.mp4', '/audio.mp3'):
@@ -74,7 +74,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.send_header('Content-Length', str(len(body)))
         self.send_header('Accept-Ranges', 'bytes' if self.server.support_ranges else 'none')
         if path == '/cookie':
-            self.send_header('Set-Cookie', 'idm_qa=authorized; Path=/; SameSite=Lax')
+            self.send_header('Set-Cookie', 'mdm_qa=authorized; Path=/; SameSite=Lax')
         if path.endswith('.bin'):
             self.send_header('Content-Disposition', 'attachment; filename="' + path[1:] + '"')
         self.end_headers()
@@ -98,7 +98,7 @@ class Fixture:
         self.server = LoopbackHTTPServer(('127.0.0.1', 0), Handler)
         self.server.support_ranges=self.support_ranges
         request={'id':str(uuid.uuid4()),'op':'download','links':[{'url':'http://127.0.0.1:'+str(self.server.server_port)+'/file.bin','filename':'safari.bin'}]}
-        self.server.handoff_url='idm-mac://download?payload='+base64.urlsafe_b64encode(json.dumps(request).encode()).decode().rstrip('=')
+        self.server.handoff_url='macdownloadmanager://download?payload='+base64.urlsafe_b64encode(json.dumps(request).encode()).decode().rstrip('=')
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         self.thread.start()
         self.url = 'http://127.0.0.1:' + str(self.server.server_port)
