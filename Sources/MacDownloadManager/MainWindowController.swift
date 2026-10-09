@@ -16,7 +16,7 @@ import CryptoKit
     private var selectedJobID:UUID?
     private var refreshingTable = false
     private var toolbarAppearance = ToolbarAppearance.classic
-    private var interfaceAppearance = InterfaceAppearance.light
+    private var interfaceAppearance = InterfaceAppearance.classicIDM
     private let appearanceDefaults:UserDefaults?
     private var sidebarSurface:NSView?
     private var listSurface:NSView?
@@ -45,11 +45,11 @@ import CryptoKit
         jobs = try store.load()
         if let defaults = self.appearanceDefaults {
             toolbarAppearance = defaults.string(forKey:"MacDownloadManager.toolbarAppearance").flatMap(ToolbarAppearance.init(rawValue:)) ?? .classic
-            interfaceAppearance = defaults.string(forKey:"MacDownloadManager.interfaceAppearance").flatMap(InterfaceAppearance.init(rawValue:)) ?? .light
+            interfaceAppearance = defaults.string(forKey:"MacDownloadManager.interfaceAppearance").flatMap(InterfaceAppearance.from(string:)) ?? .classicIDM
         }
         if storageDirectory == nil,let data = UserDefaults.standard.data(forKey: "downloadOptions"), let saved = try? JSONDecoder().decode(DownloadOptions.self, from: data) { options = saved }
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1100, height: 680), styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
-        window.appearance = interfaceAppearance.appKit;window.backgroundColor = .windowBackgroundColor;window.title = "MacDownloadManager"; window.center(); window.minSize = NSSize(width: 900, height: 500)
+        window.appearance = interfaceAppearance.appKit;window.backgroundColor = interfaceAppearance.windowBackground;window.title = "MacDownloadManager"; window.center(); window.minSize = NSSize(width: 900, height: 500)
         super.init(window: window)
         configureMenu(); configureContent(); applyToolbarAppearance(); applyInterfaceAppearance()
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
@@ -128,9 +128,10 @@ import CryptoKit
         for mode in [ToolbarAppearance.classic,.compact] {
             toolbarAppearance = mode; applyToolbarAppearance()
             guard window.toolbar?.items.count == toolbarActions.count,table.rowHeight == (mode == .classic ? 30 : 44) else { throw DownloadError.storage("Toolbar appearance lost controls or row density") }
-            for appearance in [InterfaceAppearance.light,.dark] {
+            for appearance in [InterfaceAppearance.classicIDM,.light,.dark,.midnight,.emerald] {
                 interfaceAppearance = appearance;applyInterfaceAppearance();content.layoutSubtreeIfNeeded();window.displayIfNeeded()
-                guard window.effectiveAppearance.bestMatch(from:[.aqua,.darkAqua]) == (appearance == .dark ? .darkAqua : .aqua) else { throw DownloadError.storage("Appearance selection failed") }
+                let expectedMatch: NSAppearance.Name = appearance.isDark ? .darkAqua : .aqua
+                guard window.effectiveAppearance.bestMatch(from:[.aqua,.darkAqua]) == expectedMatch else { throw DownloadError.storage("Appearance selection failed") }
                 if let bitmap = frameView.bitmapImageRepForCachingDisplay(in:frameView.bounds) {
                     frameView.cacheDisplay(in:frameView.bounds,to:bitmap)
                     try bitmap.representation(using:.png,properties:[:])?.write(to:output.deletingLastPathComponent().appendingPathComponent("ui-"+mode.rawValue+"-"+appearance.rawValue+".png"))
@@ -297,8 +298,18 @@ import CryptoKit
             let item = viewItem.submenu!.addItem(withTitle:title,action:#selector(selectToolbarAppearance(_:)),keyEquivalent:"");item.target = self;item.representedObject = value
         }
         viewItem.submenu?.addItem(.separator())
-        for (title,value) in [("Light Appearance","light"),("Dark Appearance","dark"),("Follow System","system")] {
-            let item = viewItem.submenu!.addItem(withTitle:title,action:#selector(selectInterfaceAppearance(_:)),keyEquivalent:"");item.target = self;item.representedObject = value
+        let themeMenu = NSMenu(title: "Themes")
+        let themeSubmenuItem = viewItem.submenu!.addItem(withTitle: "Theme", action: nil, keyEquivalent: "")
+        themeSubmenuItem.submenu = themeMenu
+        for appearance in InterfaceAppearance.allCases {
+            let item = themeMenu.addItem(withTitle: appearance.title, action: #selector(selectInterfaceAppearance(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = appearance.rawValue
+        }
+        for appearance in InterfaceAppearance.allCases {
+            let item = viewItem.submenu!.addItem(withTitle: appearance.title, action: #selector(selectInterfaceAppearance(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = appearance.rawValue
         }
         NSApp.mainMenu = menu
     }
@@ -314,7 +325,8 @@ import CryptoKit
         applyToolbarAppearance()
     }
     @objc private func selectInterfaceAppearance(_ item:NSMenuItem) {
-        guard let value = item.representedObject as? String,let appearance = InterfaceAppearance(rawValue:value) else { return }
+        guard let value = item.representedObject as? String else { return }
+        let appearance = InterfaceAppearance.from(string: value)
         interfaceAppearance = appearance
         appearanceDefaults?.set(value,forKey:"MacDownloadManager.interfaceAppearance")
         applyInterfaceAppearance()
@@ -334,11 +346,17 @@ import CryptoKit
         NSApp.appearance = interfaceAppearance.appKit
         window?.appearance = interfaceAppearance.appKit
         detailsController?.window?.appearance = interfaceAppearance.appKit
+        window?.backgroundColor = interfaceAppearance.windowBackground
+        let sidebarColor = interfaceAppearance.sidebarBackground
+        let tableColor = interfaceAppearance.tableBackground
+        (sidebarSurface as? AppearanceSurface)?.surfaceColor = sidebarColor
+        (listSurface as? AppearanceSurface)?.surfaceColor = tableColor
         window?.effectiveAppearance.performAsCurrentDrawingAppearance {
-            sidebarSurface?.layer?.backgroundColor = AppTheme.sidebar.cgColor
-            listSurface?.layer?.backgroundColor = NSColor.textBackgroundColor.cgColor
+            sidebarSurface?.layer?.backgroundColor = sidebarColor.cgColor
+            listSurface?.layer?.backgroundColor = tableColor.cgColor
         }
-        table.backgroundColor = .textBackgroundColor;categories.backgroundColor = AppTheme.sidebar
+        table.backgroundColor = tableColor
+        categories.backgroundColor = sidebarColor
         window?.contentView?.needsDisplay = true
     }
     private func configureContent() {
@@ -516,8 +534,53 @@ import CryptoKit
         failureLabel.stringValue = selected?.error ?? "";failureLabel.toolTip = selected?.error
         failureRetry.isEnabled = selected?.browserSourceURL == nil && (selected?.state == .failed || selected?.state == .paused)
  if let job = selected, let error = job.error { status.stringValue = "Download failed · " + (job.url.host ?? "");status.toolTip = error;return }; if let storageError { status.stringValue = storageError; return }; status.stringValue = "\(jobs.count) downloads · \(tasks.count) active · Queue \(runningQueue ? "running" : "stopped")" }
-    @objc private func filterChanged() { refresh() }
-    @objc private func about() { let a = NSAlert(); a.messageText = "MacDownloadManager"; a.informativeText = "An independent open-source download manager for macOS. Version " + (Bundle.main.object(forInfoDictionaryKey:"CFBundleShortVersionString") as? String ?? "0.3.0") + " · macOS 13 or later."; a.runModal() }
+    @objc private func about() {
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.3.0"
+        let a = NSAlert()
+        a.messageText = "MacDownloadManager"
+        a.informativeText = """
+        Version \(version) · macOS 13 or later (Universal Apple Silicon & Intel)
+
+        Author & Developer:
+        Haseeb Mir (GitHub: @haseeb-heaven)
+
+        License:
+        MIT License (Free & Open Source Software)
+        Copyright © 2026 Haseeb Mir. All rights reserved.
+
+        Inspiration:
+        Workflow inspired by the original classic IDM (Internet Download Manager).
+        An independent, clean-room native implementation authored in Swift & AppKit.
+        No proprietary code, artwork, or binaries are included or derived.
+        """
+        if let icon = NSApp.applicationIconImage { a.icon = icon }
+        a.addButton(withTitle: "OK")
+        a.addButton(withTitle: "GitHub Repository")
+        a.addButton(withTitle: "View License")
+        let response = a.runModal()
+        if response == .alertSecondButtonReturn {
+            if let url = URL(string: "https://github.com/haseeb-heaven/mac-download-manager") {
+                NSWorkspace.shared.open(url)
+            }
+        } else if response == .alertThirdButtonReturn {
+            showLicenseAlert()
+        }
+    }
+    private func showLicenseAlert() {
+        let a = NSAlert()
+        a.messageText = "MIT License"
+        a.informativeText = """
+        Copyright (c) 2026 Haseeb Mir
+
+        Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+        The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+        THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+        """
+        a.addButton(withTitle: "Close")
+        a.runModal()
+    }
     private func textField(_ placeholder: String, secure: Bool = false) -> NSTextField {
         let field: NSTextField = secure ? NSSecureTextField() : NSTextField(); field.placeholderString = placeholder
         field.widthAnchor.constraint(equalToConstant: 420).isActive = true; return field

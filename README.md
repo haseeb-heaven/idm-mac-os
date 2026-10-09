@@ -39,7 +39,8 @@ The release bundle is locally ad hoc signed. App data is stored in `~/Library/Ap
 - Partial-file pause/resume, response validators, retries, redirects, and safe final assembly.
 - SQLite persistence and recovery after restart; Keychain Basic authentication.
 - Proxy settings, aggregate rate limits, FIFO queue, and per-job scheduled start times.
-- Colored toolbar with labeled actions; optional compact layout, light/dark/system appearance, searchable downloads and live details.
+- 5 selectable themes with **Classic IDM enabled by default**, plus Modern Light, Modern Dark, Midnight Blue, Nordic Emerald, and Follow System.
+- Colored toolbar with labeled actions; optional compact layout, searchable downloads and live details.
 - Single-page file-link grabber with deduplication and review before downloading.
 - Chromium and Firefox extensions: link/context-menu handoff, batches, direct media selection, optional cookies and automatic capture.
 - Streaming imports from live browser Blob URLs; Safari/other-browser HTTP bookmarklet handoff.
@@ -82,3 +83,9 @@ docs/                       Architecture, coverage, screenshots, and limits
 ```
 
 [AGENTS.md](AGENTS.md) defines the development, testing, review, and publication rules. Only independently authored code and the project-owned icon are published — never third-party binaries, artwork, keys, or credentials.
+
+## Author & License
+
+- **Author**: Haseeb Mir ([@haseeb-heaven](https://github.com/haseeb-heaven))
+- **License**: [MIT License](LICENSE) — Free and Open Source.
+- **Inspiration**: Workflow inspired by classic Internet Download Manager (Tonec FZE). No affiliation, no shared code, no reverse-engineered binaries.

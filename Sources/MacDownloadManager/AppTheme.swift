@@ -2,10 +2,113 @@ import AppKit
 import DownloadCore
 
 enum ToolbarAppearance:String { case classic, compact }
-enum InterfaceAppearance:String {
-    case light, dark, system
-    var appKit:NSAppearance? { switch self { case .light:NSAppearance(named:.aqua); case .dark:NSAppearance(named:.darkAqua); case .system:nil } }
+
+@MainActor enum InterfaceAppearance: String, CaseIterable {
+    case classicIDM = "classicIDM"
+    case light = "light"
+    case dark = "dark"
+    case midnight = "midnight"
+    case emerald = "emerald"
+    case system = "system"
+
+    var title: String {
+        switch self {
+        case .classicIDM: return "Classic IDM (Default)"
+        case .light: return "Modern Light"
+        case .dark: return "Modern Dark"
+        case .midnight: return "Midnight Blue"
+        case .emerald: return "Nordic Emerald"
+        case .system: return "Follow System"
+        }
+    }
+
+    static func from(string: String?) -> InterfaceAppearance {
+        guard let string else { return .classicIDM }
+        if string == "classic" || string == "classicIDM" { return .classicIDM }
+        return InterfaceAppearance(rawValue: string) ?? .classicIDM
+    }
+
+    var appKit: NSAppearance? {
+        switch self {
+        case .classicIDM, .light:
+            return NSAppearance(named: .aqua)
+        case .dark, .midnight, .emerald:
+            return NSAppearance(named: .darkAqua)
+        case .system:
+            return nil
+        }
+    }
+
+    var isDark: Bool {
+        switch self {
+        case .dark, .midnight, .emerald: return true
+        default: return false
+        }
+    }
+
+    var windowBackground: NSColor {
+        switch self {
+        case .classicIDM:
+            return NSColor(srgbRed: 0.93, green: 0.92, blue: 0.90, alpha: 1)
+        case .light, .dark, .system:
+            return .windowBackgroundColor
+        case .midnight:
+            return NSColor(srgbRed: 0.07, green: 0.09, blue: 0.15, alpha: 1)
+        case .emerald:
+            return NSColor(srgbRed: 0.06, green: 0.11, blue: 0.09, alpha: 1)
+        }
+    }
+
+    var sidebarBackground: NSColor {
+        switch self {
+        case .classicIDM:
+            return NSColor(srgbRed: 0.95, green: 0.94, blue: 0.92, alpha: 1)
+        case .light:
+            return NSColor(srgbRed: 0.956, green: 0.96, blue: 0.964, alpha: 1)
+        case .dark:
+            return NSColor(white: 0.14, alpha: 1)
+        case .midnight:
+            return NSColor(srgbRed: 0.10, green: 0.13, blue: 0.22, alpha: 1)
+        case .emerald:
+            return NSColor(srgbRed: 0.09, green: 0.15, blue: 0.13, alpha: 1)
+        case .system:
+            return AppTheme.sidebar
+        }
+    }
+
+    var tableBackground: NSColor {
+        switch self {
+        case .classicIDM:
+            return .white
+        case .light, .system:
+            return .textBackgroundColor
+        case .dark:
+            return NSColor(white: 0.11, alpha: 1)
+        case .midnight:
+            return NSColor(srgbRed: 0.05, green: 0.07, blue: 0.12, alpha: 1)
+        case .emerald:
+            return NSColor(srgbRed: 0.04, green: 0.08, blue: 0.06, alpha: 1)
+        }
+    }
+
+    var accentColor: NSColor {
+        switch self {
+        case .classicIDM:
+            return NSColor(srgbRed: 0.10, green: 0.40, blue: 0.85, alpha: 1)
+        case .light:
+            return NSColor(srgbRed: 0.12, green: 0.43, blue: 0.76, alpha: 1)
+        case .dark:
+            return NSColor(srgbRed: 0.20, green: 0.55, blue: 0.90, alpha: 1)
+        case .midnight:
+            return NSColor(srgbRed: 0.22, green: 0.74, blue: 0.97, alpha: 1)
+        case .emerald:
+            return NSColor(srgbRed: 0.20, green: 0.82, blue: 0.55, alpha: 1)
+        case .system:
+            return .controlAccentColor
+        }
+    }
 }
+
 
 /// Light surfaces and colored controls for the classic toolbar theme.
 @MainActor enum AppTheme {
