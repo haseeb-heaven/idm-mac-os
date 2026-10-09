@@ -9,6 +9,7 @@ import http.server
 import json
 import threading
 import time
+import socketserver
 from urllib.parse import urlsplit
 
 PAYLOAD = bytes(range(256)) * 4096
@@ -25,6 +26,14 @@ window.fixtureBlobURL = URL.createObjectURL(fixtureBlob);
 const a = document.createElement('a'); a.href=fixtureBlobURL;a.download='blob.bin';a.textContent='Blob';document.body.append(a);
 window.expiredBlobURL=URL.createObjectURL(fixtureBlob);URL.revokeObjectURL(expiredBlobURL);
 </script>'''
+
+class LoopbackHTTPServer(http.server.ThreadingHTTPServer):
+    def server_bind(self):
+        # Avoid reverse DNS in isolated loopback tests on hosted runners.
+        socketserver.TCPServer.server_bind(self)
+        self.server_name = 'localhost'
+        self.server_port = self.server_address[1]
+
 
 class Handler(http.server.BaseHTTPRequestHandler):
     def do_HEAD(self):
@@ -86,7 +95,7 @@ class Fixture:
         self.support_ranges=support_ranges
 
     def __enter__(self):
-        self.server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+        self.server = LoopbackHTTPServer(('127.0.0.1', 0), Handler)
         self.server.support_ranges=self.support_ranges
         request={'id':str(uuid.uuid4()),'op':'download','links':[{'url':'http://127.0.0.1:'+str(self.server.server_port)+'/file.bin','filename':'safari.bin'}]}
         self.server.handoff_url='idm-mac://download?payload='+base64.urlsafe_b64encode(json.dumps(request).encode()).decode().rstrip('=')

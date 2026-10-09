@@ -172,7 +172,7 @@ def run(args):
             worker.close()
             chooser=CDP(wait_target(port,'popup.html?media=1')['webSocketDebuggerUrl'])
             deadline=time.monotonic()+15
-            while chooser.evaluate('document.querySelector("#choices").options.length')!=3:
+            while chooser.evaluate('document.querySelector("#choices")?.options.length')!=3:
                 if time.monotonic()>deadline:raise TimeoutError('Media context selector did not show HTTP and Blob choices')
                 time.sleep(.1)
             if set(downloads.rglob('*'))!=previous:raise AssertionError('Media selector queued downloads before selection')
@@ -297,11 +297,16 @@ def run_firefox(args):
                 if time.monotonic()>deadline:raise TimeoutError('Media context selector tab not opened')
                 time.sleep(.1)
             driver.request('POST',driver.path('/window'),{'handle':new_handles.pop()})
+            driver.request('POST',driver.path('/window/rect'),{'width':1024,'height':800})
             while driver.evaluate('document.querySelector("#choices")?.options.length')!=3:
                 if time.monotonic()>deadline:raise TimeoutError('Media selector did not retain HTTP and Blob choices')
                 time.sleep(.1)
             if set(downloads.rglob('*'))!=previous:raise AssertionError('Media selector queued downloads before selection')
-            driver.evaluate('document.querySelector("#choices").value="0"');driver.click('#chosen')
+            driver.evaluate('document.querySelector("#choices").value="0"')
+            try:driver.click('#chosen')
+            except RuntimeError:
+                report['mediaViewportDiagnostic']=driver.evaluate('({width:innerWidth,height:innerHeight,scrollY,button:document.querySelector("#chosen").getBoundingClientRect().toJSON(),body:document.body.getBoundingClientRect().toJSON(),visibility:getComputedStyle(document.querySelector("#chosen")).visibility})')
+                raise
             http_file=wait_files(downloads,previous,1)[0];previous=set(downloads.rglob('*'))
             driver.evaluate('(()=>{const choices=document.querySelector("#choices");choices.value=[...choices.options].find(x=>x.textContent.startsWith("blob:")).value})()');driver.click('#chosen')
             try:blob_file=wait_files(downloads,previous,1)[0]

@@ -1,6 +1,6 @@
 """Deterministic loopback fixture for download-engine integration tests."""
 from http.server import ThreadingHTTPServer,BaseHTTPRequestHandler
-import re,threading,time,socket
+import re,threading,time,socket,socketserver
 from urllib.parse import urlsplit,parse_qs
 DATA=bytes(range(256))*4096
 lock=threading.Lock(); attempts={}
@@ -102,6 +102,12 @@ class Handler(BaseHTTPRequestHandler):
     self.wfile.write(payload[index:index+16384]);self.wfile.flush()
     if path=='/slow':time.sleep(.025)
   except (BrokenPipeError,ConnectionResetError,OSError):pass
-server=ThreadingHTTPServer(('127.0.0.1',0),Handler)
+class LoopbackHTTPServer(ThreadingHTTPServer):
+ def server_bind(self):
+  # HTTPServer normally reverse-resolves its host. Fixture loopback naming is
+  # known; keep test startup independent of the runner's external DNS settings.
+  socketserver.TCPServer.server_bind(self)
+  self.server_name='localhost';self.server_port=self.server_address[1]
+server=LoopbackHTTPServer(('127.0.0.1',0),Handler)
 print(server.server_address[1],flush=True)
 server.serve_forever()

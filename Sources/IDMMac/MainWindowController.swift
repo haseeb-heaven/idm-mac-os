@@ -3,7 +3,7 @@ import IDMCore
 import UniformTypeIdentifiers
 import CryptoKit
 
-@MainActor final class MainWindowController: NSWindowController, NSTableViewDataSource, NSTableViewDelegate, NSOutlineViewDataSource, NSOutlineViewDelegate, NSToolbarDelegate, NSToolbarItemValidation {
+@MainActor final class MainWindowController: NSWindowController, NSTableViewDataSource, NSTableViewDelegate, NSOutlineViewDataSource, NSOutlineViewDelegate, NSToolbarDelegate, NSToolbarItemValidation, NSMenuItemValidation {
     var browserIntegration: BrowserIntegrationCoordinator?
     var browserQAReportURL: URL?
     private let store: JobStore
@@ -15,6 +15,11 @@ import CryptoKit
     private let search = NSSearchField()
     private var selectedJobID:UUID?
     private var refreshingTable = false
+    private var toolbarAppearance = IDMToolbarAppearance.classic
+    private var interfaceAppearance = IDMInterfaceAppearance.light
+    private let appearanceDefaults:UserDefaults?
+    private var sidebarSurface:NSView?
+    private var listSurface:NSView?
     private let listTitle = NSTextField(labelWithString:"All Downloads")
     private let listSummary = NSTextField(labelWithString:"")
     private let categories = NSOutlineView()
@@ -32,16 +37,21 @@ import CryptoKit
     private var lastPersist = Date.distantPast
     private var progressTimes: [UUID: (Date, Int64, Double)] = [:]
 
-    init(storageDirectory: URL? = nil) throws {
+    init(storageDirectory: URL? = nil, appearanceDefaults:UserDefaults? = nil) throws {
+        self.appearanceDefaults = appearanceDefaults ?? (storageDirectory == nil ? .standard : nil)
         let support = storageDirectory ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("IDMMac")
         store = try JobStore(url: support.appendingPathComponent("downloads.sqlite"))
         engine = DownloadEngine(workDirectory: support.appendingPathComponent("partials"))
         jobs = try store.load()
+        if let defaults = self.appearanceDefaults {
+            toolbarAppearance = defaults.string(forKey:"IDMMac.toolbarAppearance").flatMap(IDMToolbarAppearance.init(rawValue:)) ?? .classic
+            interfaceAppearance = defaults.string(forKey:"IDMMac.interfaceAppearance").flatMap(IDMInterfaceAppearance.init(rawValue:)) ?? .light
+        }
         if storageDirectory == nil,let data = UserDefaults.standard.data(forKey: "downloadOptions"), let saved = try? JSONDecoder().decode(DownloadOptions.self, from: data) { options = saved }
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1100, height: 680), styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
-        window.appearance = NSAppearance(named:.aqua);window.backgroundColor = .windowBackgroundColor;window.title = "IDM Mac"; window.center(); window.minSize = NSSize(width: 900, height: 500)
+        window.appearance = interfaceAppearance.appKit;window.backgroundColor = .windowBackgroundColor;window.title = "IDM Mac"; window.center(); window.minSize = NSSize(width: 900, height: 500)
         super.init(window: window)
-        configureMenu(); configureContent()
+        configureMenu(); configureContent(); applyToolbarAppearance(); applyInterfaceAppearance()
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.pumpQueue(); self?.updateStatus() }
         }
@@ -114,11 +124,41 @@ import CryptoKit
         }
         guard table.enclosingScrollView?.bounds.width ?? 0 > 500, categories.bounds.width >= 150 else { throw DownloadError.storage("Content is clipped at minimum width") }
         window.setFrame(defaultFrame,display:true)
+        let savedToolbar = toolbarAppearance, savedAppearance = interfaceAppearance
+        for mode in [IDMToolbarAppearance.classic,.compact] {
+            toolbarAppearance = mode; applyToolbarAppearance()
+            guard window.toolbar?.items.count == toolbarActions.count,table.rowHeight == (mode == .classic ? 30 : 44) else { throw DownloadError.storage("Toolbar appearance lost controls or row density") }
+            for appearance in [IDMInterfaceAppearance.light,.dark] {
+                interfaceAppearance = appearance;applyInterfaceAppearance();content.layoutSubtreeIfNeeded();window.displayIfNeeded()
+                guard window.effectiveAppearance.bestMatch(from:[.aqua,.darkAqua]) == (appearance == .dark ? .darkAqua : .aqua) else { throw DownloadError.storage("Appearance selection failed") }
+                if let bitmap = frameView.bitmapImageRepForCachingDisplay(in:frameView.bounds) {
+                    frameView.cacheDisplay(in:frameView.bounds,to:bitmap)
+                    try bitmap.representation(using:.png,properties:[:])?.write(to:output.deletingLastPathComponent().appendingPathComponent("ui-"+mode.rawValue+"-"+appearance.rawValue+".png"))
+                }
+            }
+        }
+        interfaceAppearance = .system;applyInterfaceAppearance()
+        guard window.appearance == nil,NSApp.appearance == nil else { throw DownloadError.storage("System appearance did not release the override") }
+        toolbarAppearance = savedToolbar;interfaceAppearance = savedAppearance;applyToolbarAppearance();applyInterfaceAppearance()
+        let suite = "IDMMac.AppearanceCheck.\(UUID())"
+        guard let defaults = UserDefaults(suiteName:suite) else { throw DownloadError.storage("Cannot create isolated appearance defaults") }
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(suite)
+        defer { defaults.removePersistentDomain(forName:suite);try? FileManager.default.removeItem(at:directory);applyInterfaceAppearance();configureMenu() }
+        let writer = try MainWindowController(storageDirectory:directory.appendingPathComponent("writer"),appearanceDefaults:defaults)
+        defer { writer.prepareForTermination();writer.close() }
+        let toolbarItem = NSMenuItem();toolbarItem.representedObject = IDMToolbarAppearance.compact.rawValue
+        let appearanceItem = NSMenuItem();appearanceItem.representedObject = IDMInterfaceAppearance.dark.rawValue
+        writer.selectToolbarAppearance(toolbarItem);writer.selectInterfaceAppearance(appearanceItem)
+        let restored = try MainWindowController(storageDirectory:directory.appendingPathComponent("reader"),appearanceDefaults:defaults)
+        defer { restored.prepareForTermination();restored.close() }
+        guard restored.toolbarAppearance == .compact,restored.interfaceAppearance == .dark,
+              restored.window?.toolbar?.displayMode == .iconOnly,
+              restored.window?.effectiveAppearance.bestMatch(from:[.aqua,.darkAqua]) == .darkAqua else { throw DownloadError.storage("Appearance preferences did not survive a new controller") }
         let scheduled = try DownloadJob(url:URL(string:"https://example.com/scheduled")!,destination:output.deletingLastPathComponent().appendingPathComponent("scheduled.bin"),scheduledAt:Date().addingTimeInterval(3600))
         jobs.append(scheduled);prepareForTermination()
         guard let saved = try store.load().first(where:{$0.id == scheduled.id}), saved.state == .queued, saved.scheduledAt == scheduled.scheduledAt else { throw DownloadError.storage("Quit changed scheduled job") }
         jobs.removeAll(where:{$0.id == scheduled.id});try store.save(jobs)
-        return ["scheduledQuitCheck":true,"windowNumber":window.windowNumber,"toolbarItems":window.toolbar?.items.count ?? 0,"minimumWidthChecked":900,"visible":window.isVisible,"columns":table.tableColumns.count,"categoryRows":categories.numberOfRows,"width":window.frame.width,"height":window.frame.height]
+        return ["appearancePersistenceChecked":true,"toolbarAppearancesChecked":2,"lightAndDarkChecked":true,"scheduledQuitCheck":true,"windowNumber":window.windowNumber,"toolbarItems":window.toolbar?.items.count ?? 0,"minimumWidthChecked":900,"visible":window.isVisible,"columns":table.tableColumns.count,"categoryRows":categories.numberOfRows,"width":window.frame.width,"height":window.frame.height]
     }
     func endToEndCheck(base:URL,output:URL) async throws -> [String:Any] {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent("idm-ui-transfer-\(UUID())")
@@ -215,14 +255,13 @@ import CryptoKit
     func toolbar(_ toolbar:NSToolbar,itemForItemIdentifier identifier:NSToolbarItem.Identifier,willBeInsertedIntoToolbar:Bool) -> NSToolbarItem? {
         guard let (_,title,symbol,action) = toolbarActions.first(where:{$0.0 == identifier.rawValue}) else { return nil }
         let item = NSToolbarItem(itemIdentifier:identifier);item.label = title;item.paletteLabel = title;item.toolTip = title
-        item.image = NSImage(systemSymbolName:symbol,accessibilityDescription:title)?.withSymbolConfiguration(.init(pointSize:17,weight:.medium))
+        item.image = toolbarAppearance == .classic ? IDMTheme.classicIcon(identifier.rawValue) : NSImage(systemSymbolName:symbol,accessibilityDescription:title)?.withSymbolConfiguration(.init(pointSize:17,weight:.medium))
         item.target = self;item.action = action
-        if identifier.rawValue == "add" {
+        if identifier.rawValue == "add",toolbarAppearance == .compact {
             let button = NSButton(title:"Add URL",image:NSImage(systemSymbolName:"plus",accessibilityDescription:"Add download")!,target:self,action:action)
             button.imagePosition = .imageLeft; button.bezelStyle = .rounded; button.controlSize = .small
             button.setAccessibilityLabel("Add download URL"); item.view = button
         }
-        item.visibilityPriority = ["add","resume","stop","grabber"].contains(identifier.rawValue) ? .high : .low
         item.visibilityPriority = ["add","resume","stop","details"].contains(identifier.rawValue) ? .high : .standard
         return item
     }
@@ -253,7 +292,54 @@ import CryptoKit
         for (title, action, key) in [("Cut", #selector(NSText.cut(_:)), "x"), ("Copy", #selector(NSText.copy(_:)), "c"), ("Paste", #selector(NSText.paste(_:)), "v"), ("Select All", #selector(NSText.selectAll(_:)), "a")] {
             editItem.submenu?.addItem(withTitle: title, action: action, keyEquivalent: key)
         }
+        let viewItem = NSMenuItem(); menu.addItem(viewItem); viewItem.submenu = NSMenu(title:"View")
+        for (title,value) in [("Classic IDM Toolbar","classic"),("Compact Mac Toolbar","compact")] {
+            let item = viewItem.submenu!.addItem(withTitle:title,action:#selector(selectToolbarAppearance(_:)),keyEquivalent:"");item.target = self;item.representedObject = value
+        }
+        viewItem.submenu?.addItem(.separator())
+        for (title,value) in [("Light Appearance","light"),("Dark Appearance","dark"),("Follow System","system")] {
+            let item = viewItem.submenu!.addItem(withTitle:title,action:#selector(selectInterfaceAppearance(_:)),keyEquivalent:"");item.target = self;item.representedObject = value
+        }
         NSApp.mainMenu = menu
+    }
+    func validateMenuItem(_ item:NSMenuItem) -> Bool {
+        if item.action == #selector(selectToolbarAppearance(_:)) { item.state = item.representedObject as? String == toolbarAppearance.rawValue ? .on : .off }
+        if item.action == #selector(selectInterfaceAppearance(_:)) { item.state = item.representedObject as? String == interfaceAppearance.rawValue ? .on : .off }
+        return true
+    }
+    @objc private func selectToolbarAppearance(_ item:NSMenuItem) {
+        guard let value = item.representedObject as? String,let appearance = IDMToolbarAppearance(rawValue:value) else { return }
+        toolbarAppearance = appearance
+        appearanceDefaults?.set(value,forKey:"IDMMac.toolbarAppearance")
+        applyToolbarAppearance()
+    }
+    @objc private func selectInterfaceAppearance(_ item:NSMenuItem) {
+        guard let value = item.representedObject as? String,let appearance = IDMInterfaceAppearance(rawValue:value) else { return }
+        interfaceAppearance = appearance
+        appearanceDefaults?.set(value,forKey:"IDMMac.interfaceAppearance")
+        applyInterfaceAppearance()
+    }
+    private func applyToolbarAppearance() {
+        guard let toolbar = window?.toolbar else { return }
+        toolbar.displayMode = toolbarAppearance == .classic ? .iconAndLabel : .iconOnly
+        toolbar.sizeMode = toolbarAppearance == .classic ? .regular : .small
+        window?.toolbarStyle = toolbarAppearance == .classic ? .expanded : .unifiedCompact
+        while !toolbar.items.isEmpty { toolbar.removeItem(at:0) }
+        for (index,item) in toolbarDefaultItemIdentifiers(toolbar).enumerated() { toolbar.insertItem(withItemIdentifier:item,at:index) }
+        table.rowHeight = toolbarAppearance == .classic ? 30 : 44
+        categories.rowHeight = toolbarAppearance == .classic ? 25 : 30
+        categories.reloadData();refresh()
+    }
+    private func applyInterfaceAppearance() {
+        NSApp.appearance = interfaceAppearance.appKit
+        window?.appearance = interfaceAppearance.appKit
+        detailsController?.window?.appearance = interfaceAppearance.appKit
+        window?.effectiveAppearance.performAsCurrentDrawingAppearance {
+            sidebarSurface?.layer?.backgroundColor = IDMTheme.sidebar.cgColor
+            listSurface?.layer?.backgroundColor = NSColor.textBackgroundColor.cgColor
+        }
+        table.backgroundColor = .textBackgroundColor;categories.backgroundColor = IDMTheme.sidebar
+        window?.contentView?.needsDisplay = true
     }
     private func configureContent() {
         guard let content = window?.contentView else { return }
@@ -269,9 +355,10 @@ import CryptoKit
         categories.setAccessibilityLabel("Download categories")
         let categoryScroll = NSScrollView(); categoryScroll.documentView = categories; categoryScroll.hasVerticalScroller = true; categoryScroll.drawsBackground = false
         let sidebarTitle = NSTextField(labelWithString:"LIBRARY"); sidebarTitle.font = .systemFont(ofSize:10,weight:.semibold); sidebarTitle.textColor = .secondaryLabelColor
-        let sidebar = NSStackView(views:[sidebarTitle,categoryScroll]); sidebar.orientation = .vertical; sidebar.alignment = .leading; sidebar.spacing = 10
+        let sidebar = AppearanceSurface(views:[sidebarTitle,categoryScroll]); sidebar.orientation = .vertical; sidebar.alignment = .leading; sidebar.spacing = 10
         sidebar.edgeInsets = NSEdgeInsets(top:18,left:12,bottom:10,right:8)
-        sidebar.wantsLayer = true; sidebar.layer?.backgroundColor = IDMTheme.sidebar.cgColor
+        sidebar.surfaceColor = IDMTheme.sidebar
+        sidebarSurface = sidebar
         categoryScroll.widthAnchor.constraint(equalTo:sidebar.widthAnchor,constant:-20).isActive = true
         table.columnAutoresizingStyle = .uniformColumnAutoresizingStyle
         table.backgroundColor = .textBackgroundColor; table.gridStyleMask = []; table.usesAlternatingRowBackgroundColors = false
@@ -292,8 +379,9 @@ import CryptoKit
         let header = NSStackView(views:[heading,flexible,search]); header.orientation = .horizontal; header.alignment = .centerY
         header.edgeInsets = NSEdgeInsets(top:16,left:20,bottom:16,right:20)
         let headerLine = NSBox(); headerLine.boxType = .separator
-        let list = NSStackView(views:[header,headerLine,scroll]); list.orientation = .vertical; list.alignment = .leading; list.spacing = 0
+        let list = AppearanceSurface(views:[header,headerLine,scroll]); list.orientation = .vertical; list.alignment = .leading; list.spacing = 0
         list.wantsLayer = true; list.layer?.backgroundColor = NSColor.textBackgroundColor.cgColor
+        listSurface = list
         for view in [header,headerLine,scroll] { view.widthAnchor.constraint(equalTo:list.widthAnchor).isActive = true }
         let split = NSSplitView(); split.isVertical = true; split.dividerStyle = .thin; split.addArrangedSubview(sidebar); split.addArrangedSubview(list)
         failureLabel.font = .systemFont(ofSize:12); failureLabel.textColor = .secondaryLabelColor; failureLabel.maximumNumberOfLines = 2
@@ -355,7 +443,7 @@ import CryptoKit
     }
     func outlineView(_ outlineView:NSOutlineView,viewFor tableColumn:NSTableColumn?,item:Any) -> NSView? {
         guard let title = item as? String else { return nil }
-        let icon = NSImageView(); icon.image = NSImage(systemSymbolName:IDMTheme.categorySymbol(title),accessibilityDescription:title); icon.contentTintColor = .secondaryLabelColor
+        let icon = NSImageView(); icon.image = NSImage(systemSymbolName:IDMTheme.categorySymbol(title),accessibilityDescription:title); icon.contentTintColor = toolbarAppearance == .classic ? IDMTheme.color(title) : .secondaryLabelColor
         icon.widthAnchor.constraint(equalToConstant:18).isActive = true
         let label = NSTextField(labelWithString:title);label.font = .systemFont(ofSize:12);label.lineBreakMode = .byTruncatingTail
         let stack = NSStackView(views:[icon,label]);stack.spacing = 6;stack.alignment = .centerY
@@ -379,6 +467,7 @@ import CryptoKit
         if column.identifier.rawValue == "name" {
             label.font = .systemFont(ofSize:12,weight:.medium)
             let source = NSTextField(labelWithString:job.browserSourceURL == nil ? job.url.host ?? "" : "Browser import · " + (job.url.host ?? "")); source.font = .systemFont(ofSize:10); source.textColor = .secondaryLabelColor; source.lineBreakMode = .byTruncatingMiddle
+            source.isHidden = toolbarAppearance == .classic
             let names = NSStackView(views:[label,source]); names.orientation = .vertical; names.alignment = .leading; names.spacing = 3
             let icon = NSImageView(image:NSWorkspace.shared.icon(for:UTType(filenameExtension:job.destination.pathExtension) ?? .data)); icon.widthAnchor.constraint(equalToConstant:22).isActive = true; icon.heightAnchor.constraint(equalToConstant:22).isActive = true
             let stack = NSStackView(views:[icon,names]); stack.spacing = 10; stack.alignment = .centerY; stack.translatesAutoresizingMaskIntoConstraints = false; host.addSubview(stack)
@@ -428,7 +517,7 @@ import CryptoKit
         failureRetry.isEnabled = selected?.browserSourceURL == nil && (selected?.state == .failed || selected?.state == .paused)
  if let job = selected, let error = job.error { status.stringValue = "Download failed · " + (job.url.host ?? "");status.toolTip = error;return }; if let storageError { status.stringValue = storageError; return }; status.stringValue = "\(jobs.count) downloads · \(tasks.count) active · Queue \(runningQueue ? "running" : "stopped")" }
     @objc private func filterChanged() { refresh() }
-    @objc private func about() { let a = NSAlert(); a.messageText = "IDM Mac"; a.informativeText = "Personal native macOS download manager. Version 0.1. Feature parity research is ongoing."; a.runModal() }
+    @objc private func about() { let a = NSAlert(); a.messageText = "IDM Mac"; a.informativeText = "Native macOS download manager. Version " + (Bundle.main.object(forInfoDictionaryKey:"CFBundleShortVersionString") as? String ?? "0.2.0") + " · macOS 13 or later. Independently implemented; feature comparisons are documented in the project."; a.runModal() }
     private func textField(_ placeholder: String, secure: Bool = false) -> NSTextField {
         let field: NSTextField = secure ? NSSecureTextField() : NSTextField(); field.placeholderString = placeholder
         field.widthAnchor.constraint(equalToConstant: 420).isActive = true; return field

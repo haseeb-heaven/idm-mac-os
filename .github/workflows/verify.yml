@@ -12,8 +12,13 @@ concurrency:
   cancel-in-progress: true
 jobs:
   native:
-    runs-on: macos-15
-    timeout-minutes: 20
+    name: ${{ matrix.runner }} verification
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [macos-15, macos-15-intel, macos-26, macos-26-intel]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -22,9 +27,29 @@ jobs:
         with:
           node-version: '22'
           package-manager-cache: false
-      - name: Core, extensions, release package and native end-to-end checks
-        run: scripts/test.sh
-      - name: Verify packaged signatures
-        run: |
-          codesign --verify --strict 'build/IDM Mac.app'
-          codesign --verify --strict 'build/IDM Mac.app/Contents/MacOS/IDMBrowserHost'
+      - name: Extension and browser harness checks
+        run: python3 -u scripts/ci_checks.py extensions
+      - name: Core download and Keychain checks
+        run: python3 -u scripts/ci_checks.py core
+      - name: Build release package
+        run: python3 -u scripts/ci_checks.py package
+      - name: Native UI smoke and end-to-end checks
+        run: python3 -u scripts/ci_checks.py ui
+      - name: Native browser host acceptance
+        run: python3 -u scripts/ci_checks.py native
+      - name: Verify packaged signatures and record build proof
+        run: python3 -u scripts/ci_checks.py proof
+      - name: Archive tested app and reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: idm-mac-${{ matrix.runner }}-${{ github.sha }}
+          path: |
+            build/IDM-Mac-tested.zip
+            build/ci-proof.json
+            build/ui-smoke.json
+            build/ui-e2e.json
+            build/ui-e2e.png
+            build/native-browser-report.json
+          if-no-files-found: warn
+          retention-days: 14
