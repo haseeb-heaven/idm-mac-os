@@ -54,7 +54,9 @@ while true {
         if config == nil || !listening(config!) {
             config=nil
             let process=Process();process.executableURL=URL(fileURLWithPath:"/usr/bin/open");process.arguments=["-a",appURL.path];process.standardOutput=FileHandle.nullDevice;process.standardError=FileHandle.nullDevice;try process.run()
-            for _ in 0..<40 { if let ready=try? configuration(configURL), listening(ready) { config=ready;break };Thread.sleep(forTimeInterval:0.1) }
+            // A cold macOS launch can exceed four seconds (Launch Services/Keychain).
+            let launchDeadline = Date().addingTimeInterval(20)
+            while Date() < launchDeadline { if let ready=try? configuration(configURL), listening(ready) { config=ready;break };Thread.sleep(forTimeInterval:0.1) }
         }
         guard let config else { throw BrowserProtocolError.invalid }
         try emit(forward(request,config:config))
