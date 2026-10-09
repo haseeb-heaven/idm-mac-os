@@ -1,8 +1,8 @@
 # Project workflow
 
-Personal native macOS IDM project. Browser integration is excluded.
+Personal native macOS IDM project. Browser integration is now authorized. Track actual browser support and executed tests explicitly.
 
-- Work on feature branches in small commits; push reviewed changes to the private repository.
+- Work on feature branches in small commits; push reviewed changes to the public repository on develop; publish only independently authored code and recorded analysis, never original binaries or credentials.
 - Analyze real IDM application binaries using GhidraMCP; independently cross-check with Radare2 MCP. Record hashes, addresses, output, and uncertainty in RE.md and docs. Never use fake backend evidence.
 - Keep original installers untouched. Ignore extracted proprietary binaries, keys, credentials, build products, and local analyzer projects.
 - Use Swift 6, AppKit, URLSession, SQLite, and Keychain. Target macOS 15 Apple Silicon.
