@@ -1,0 +1,121 @@
+{
+  "version": "0.3.0",
+  "date": "2026-10-10",
+  "buildValidation": {
+    "version": "0.3.0",
+    "minimumMacOS": "13.0",
+    "artifacts": [
+      {
+        "filename": "MDM-0.3.0-arm64.zip",
+        "bytes": 688730,
+        "sha256": "9dd40a29c554d873f8891611bc5f01d03743057f0e82d5358b5647babac36aaa",
+        "binaries": [
+          {
+            "name": "MacDownloadManager",
+            "architectures": [
+              "arm64"
+            ],
+            "sha256": "8a9939ae2b135ceddc076ca44213431f5036c7d3be958fac7088b323335d0090",
+            "minimumMacOS": [
+              "13.0"
+            ],
+            "signature": "ad hoc; strict verification passed"
+          },
+          {
+            "name": "MacDownloadManagerHost",
+            "architectures": [
+              "arm64"
+            ],
+            "sha256": "1d470fed8624bd47748d967aba958ecdf53ed37fac6dfe99aa89ea22b9ce5d7d",
+            "minimumMacOS": [
+              "13.0"
+            ],
+            "signature": "ad hoc; strict verification passed"
+          }
+        ]
+      },
+      {
+        "filename": "MDM-0.3.0-x86_64.zip",
+        "bytes": 729402,
+        "sha256": "6c57751ccc86fd9c90f514943f80540cc4ba3d2e6761c06aecd71f050b340abb",
+        "binaries": [
+          {
+            "name": "MacDownloadManager",
+            "architectures": [
+              "x86_64"
+            ],
+            "sha256": "23f130a4802e8161a9e93987ca7027b94c77d8fe06ab3e5790aa0e3fdd32e4ce",
+            "minimumMacOS": [
+              "13.0"
+            ],
+            "signature": "ad hoc; strict verification passed"
+          },
+          {
+            "name": "MacDownloadManagerHost",
+            "architectures": [
+              "x86_64"
+            ],
+            "sha256": "8fe75eb8224a4eae0dff2c04d13a94a70e7e47166d045acd68f67a00025808f4",
+            "minimumMacOS": [
+              "13.0"
+            ],
+            "signature": "ad hoc; strict verification passed"
+          }
+        ]
+      },
+      {
+        "filename": "MDM-0.3.0-universal.zip",
+        "bytes": 1333187,
+        "sha256": "4a475b14ae0b6cee97a471476578703feb8905f143efff7c8d75d7317b788d2d",
+        "binaries": [
+          {
+            "name": "MacDownloadManager",
+            "architectures": [
+              "arm64",
+              "x86_64"
+            ],
+            "sha256": "66512dfa970b0d97b897ecd497d8edd3cdaed7acf86df0fa6acd82c7b538cad0",
+            "minimumMacOS": [
+              "13.0",
+              "13.0"
+            ],
+            "signature": "ad hoc; strict verification passed"
+          },
+          {
+            "name": "MacDownloadManagerHost",
+            "architectures": [
+              "arm64",
+              "x86_64"
+            ],
+            "sha256": "2b5a479b9b3fec74b4d72d3a4671d4229c01bd951f2a80efe8bff98262dd8feb",
+            "minimumMacOS": [
+              "13.0",
+              "13.0"
+            ],
+            "signature": "ad hoc; strict verification passed"
+          }
+        ]
+      },
+      {
+        "filename": "MDM-Extension-0.3.0-chromium.zip",
+        "bytes": 8753,
+        "sha256": "f52fbc1ca24e487de8f28e520467eebc71e545b66c189e85be5c9aeb9ce9804e",
+        "browser": "chromium",
+        "extensionName": "MacDownloadManager Extension",
+        "manifestVersion": 3
+      },
+      {
+        "filename": "MDM-Extension-0.3.0-firefox.zip",
+        "bytes": 8441,
+        "sha256": "e0b7171a97e2c2cb66bfda35ebf581b1a700f632ae09fcbb963203718e559808",
+        "browser": "firefox",
+        "extensionName": "MacDownloadManager Extension",
+        "manifestVersion": 2
+      }
+    ],
+    "runtimeValidation": "See docs/macos-compatibility.md; cross-compilation is not hardware validation."
+  },
+  "limitations": [
+    "Runtime verification is recorded per environment; see docs/macos-compatibility.md."
+  ]
+}

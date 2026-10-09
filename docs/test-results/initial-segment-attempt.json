@@ -1,8 +1,0 @@
-{
-  "options": {
-    "chunkBytes": 4194304,
-    "connections": 4
-  },
-  "outcome": "Stopped after remote transfer stalled; retry smaller segments",
-  "partials": []
-}

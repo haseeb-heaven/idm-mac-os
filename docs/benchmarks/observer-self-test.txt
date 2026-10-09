@@ -1,7 +1,0 @@
-Using a 32-bit prefix in Wow64 mode (/Users/haseeb-mir/Documents/Code/idm-mac-os/build/bottles/IDM-Reference) pid 4b4. tid 4b8
-Using a 32-bit prefix in Wow64 mode (/Users/haseeb-mir/Documents/Code/idm-mac-os/build/bottles/IDM-Reference) pid 4bc. tid 4c0
-Using a 32-bit prefix in Wow64 mode (/Users/haseeb-mir/Documents/Code/idm-mac-os/build/bottles/IDM-Reference) pid 4c4. tid 4c8
-Using a 32-bit prefix in Wow64 mode (/Users/haseeb-mir/Documents/Code/idm-mac-os/build/bottles/IDM-Reference) pid 4d0. tid 4d4
-2026-10-09 02:46:19.342 idm_probe-final.exe[36873:17805739] +[IMKClient subclass]: chose IMKClient_Modern
-CONTROL 0 Static public-test-label
-PASS observer skips Edit text reads and retains Static output

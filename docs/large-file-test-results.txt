@@ -1,2 +1,0 @@
-PASS large-file memory: peak RSS 462143488 bytes (< 1 GiB)
-PASS 5 GiB download: 5368709120 bytes, full SHA256 verified, 90 seconds

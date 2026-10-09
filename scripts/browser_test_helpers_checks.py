@@ -9,9 +9,9 @@ from browser_integration_tests import matching_final_files, wait_files
 
 class CompletedDownloadChecks(unittest.TestCase):
     def test_staging_and_unfinished_final_bytes_never_pass(self):
-        with tempfile.TemporaryDirectory(prefix='idm-browser-helper-') as temporary:
+        with tempfile.TemporaryDirectory(prefix='mdm-browser-helper-') as temporary:
             qa=Path(temporary);downloads=qa/'downloads';downloads.mkdir()
-            staging=downloads/'.idm-blob-test';staging.write_bytes(PAYLOAD)
+            staging=downloads/'.mdm-blob-test';staging.write_bytes(PAYLOAD)
             (qa/'jobs.json').write_text(json.dumps([{'destination':str(staging),'state':'completed'}]))
             self.assertEqual(matching_final_files(downloads,set()),[])
             final=downloads/'file.bin';final.write_bytes(PAYLOAD)

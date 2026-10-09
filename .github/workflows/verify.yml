@@ -43,9 +43,9 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: idm-mac-${{ matrix.runner }}-${{ github.sha }}
+          name: macdownloadmanager-${{ matrix.runner }}-${{ github.sha }}
           path: |
-            build/IDM-tested.zip
+            build/MDM-tested.zip
             build/ci-proof.json
             build/ui-smoke.json
             build/ui-e2e.json

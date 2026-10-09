@@ -55,7 +55,7 @@ class WebDriver:
     def start(self,binary,profile,extension):
         download_directory=profile.parent/'browser-downloads'
         download_directory.mkdir(exist_ok=True)
-        value=self.request('POST','/session',{'capabilities':{'alwaysMatch':{'browserName':'firefox','moz:firefoxOptions':{'binary':binary,'args':['-profile',str(profile)],'prefs':{'extensions.webextensions.uuids':json.dumps({'idm-mac@haseeb-heaven':'f8aa3891-ce0f-4d54-87c7-c5cc73dc27a1'}),'browser.shell.checkDefaultBrowser':False,'browser.download.folderList':2,'browser.download.dir':str(download_directory),'browser.download.useDownloadDir':True,'browser.download.always_ask_before_handling_new_types':False}}}}})
+        value=self.request('POST','/session',{'capabilities':{'alwaysMatch':{'browserName':'firefox','moz:firefoxOptions':{'binary':binary,'args':['-profile',str(profile)],'prefs':{'extensions.webextensions.uuids':json.dumps({'macdownloadmanager@haseeb-heaven':'f8aa3891-ce0f-4d54-87c7-c5cc73dc27a1'}),'browser.shell.checkDefaultBrowser':False,'browser.download.folderList':2,'browser.download.dir':str(download_directory),'browser.download.useDownloadDir':True,'browser.download.always_ask_before_handling_new_types':False}}}}})
         self.session=value['sessionId']
         self.request('POST',self.path('/moz/addon/install'),{'path':str(extension),'temporary':True})
         return value

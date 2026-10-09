@@ -1,8 +1,0 @@
-{
-  "content": [
-    {
-      "type": "text",
-      "text": "; 0x6cf014\n; \"Content-Range:\"\n0x0058289d      push str.Content_Range:\n0x005828a2      mov eax, dword [esi + 0x3258]\n0x005828a8      add eax, edi\n0x005828aa      push eax\n   ; fcn.006414cd\n   ; fcn.006414cd(-1, 0x0, 0x0)\n0x005828ab      call fcn.006414cd\n0x005828b0      add esp, 0xc\n0x005828b3      test eax, eax\n   ; likely\n0x005828b5      jne 0x58297b\n0x005828bb      mov ecx, dword [esi + 0x3258]\n0x005828c1      lea eax, [ecx + edi + 0xe]\n; 0x6cd09c\n; \"bytes\"\n0x005828c5      push str.bytes\n0x005828ca      push eax\n   ; fcn.0063e0c0\n   ; fcn.0063e0c0(0xd, 0x0)\n0x005828cb      call fcn.0063e0c0\n0x005828d0      add esp, 8\n0x005828d3      mov ebx, eax\n0x005828d5      test ebx, ebx\n   ; unlikely\n0x005828d7      je 0x5828fa\n0x005828d9      lea edx, [ebx + 5]\n; int32_t arg_4h\n0x005828dc      push edx\n0x005828dd      mov ecx, esi\n"
-    }
-  ]
-}

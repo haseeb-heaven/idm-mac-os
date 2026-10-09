@@ -13,7 +13,7 @@ import tempfile
 import time
 
 ROOT = Path(__file__).resolve().parent.parent
-APP = ROOT / 'build/IDM.app'
+APP = ROOT / 'build/MacDownloadManager.app'
 
 
 def execute(command, timeout):
@@ -46,11 +46,11 @@ def main():
         execute([sys.executable, 'scripts/fixture_startup_checks.py'], 30)
         execute([sys.executable, 'scripts/ci_runner_checks.py'], 30)
     elif stage == 'core':
-        execute(['scripts/swift.sh', 'run', '--disable-sandbox', 'IDMCoreChecks'], 360)
+        execute(['scripts/swift.sh', 'run', '--disable-sandbox', 'DownloadCoreChecks'], 360)
     elif stage == 'package':
         execute(['scripts/package.sh'], 600)
     elif stage == 'ui':
-        execute([str(APP / 'Contents/MacOS/IDMMac'), '--smoke-test', str(ROOT / 'build/ui-smoke.json')], 60)
+        execute([str(APP / 'Contents/MacOS/MacDownloadManager'), '--smoke-test', str(ROOT / 'build/ui-smoke.json')], 60)
         print((ROOT / 'build/ui-smoke.json').read_text(), flush=True)
         execute([sys.executable, 'scripts/ui_e2e.py'], 90)
     elif stage == 'native':
@@ -59,7 +59,7 @@ def main():
             report = json.loads((Path(directory) / 'report.json').read_text())
             (ROOT / 'build/native-browser-report.json').write_text(json.dumps(report, indent=2) + '\n')
     else:
-        binaries = [APP / 'Contents/MacOS' / name for name in ['IDMMac', 'IDMBrowserHost']]
+        binaries = [APP / 'Contents/MacOS' / name for name in ['MacDownloadManager', 'MacDownloadManagerHost']]
         for target in [APP, *binaries]:
             execute(['codesign', '--verify', '--strict', str(target)], 30)
         proof = {'runner': os.environ.get('RUNNER_NAME'), 'architecture': platform.machine(),
@@ -70,7 +70,7 @@ def main():
             proof['binaries'].append({'name': binary.name, 'architectures': arch,
                                       'sha256': hashlib.sha256(binary.read_bytes()).hexdigest()})
         (ROOT / 'build/ci-proof.json').write_text(json.dumps(proof, indent=2) + '\n')
-        execute(['ditto', '-c', '-k', '--sequesterRsrc', '--keepParent', str(APP), 'build/IDM-tested.zip'], 60)
+        execute(['ditto', '-c', '-k', '--sequesterRsrc', '--keepParent', str(APP), 'build/MDM-tested.zip'], 60)
     print(f'PASS {stage}: {time.monotonic() - started:.1f} seconds', flush=True)
 
 
