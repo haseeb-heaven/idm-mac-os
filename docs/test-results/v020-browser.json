@@ -1,6 +1,5 @@
 {
   "version": "0.2.0",
-  "executedAt": "2026-10-09T17:26:45.231554+00:00",
   "runtimePlatform": {
     "macOS": "15.3.1",
     "hardware": "Apple M2"
@@ -26,13 +25,26 @@
     "core.js": "37e29ce186bf298b71bac5fe6c4940934ff2bdec2587e2a96a8cd8024559db05",
     "background.js": "ba62584963a9b2d1f8941d4c553e179567067093bcc0c1f34b111245668cd716"
   },
+  "method": [
+    "Real isolated Firefox and Chrome for Testing processes execute the production WebExtension logic, packaged Swift native host and AppKit app",
+    "Every native downloaded fixture must have durable jobs.json completed state, exact existing final destination and matching SHA256; Blob staging and browser partial files never count",
+    "Media context testing invokes registered callback inside real browser background context and clicks actual selector; OS context-menu pointer automation is not claimed",
+    "Browser fallback completes under missing native host; Firefox nonrange original failure recovers with exactly one replacement HTTP GET"
+  ],
+  "limitations": [
+    "No physical Intel Mac tested: x86_64 app and host executed through Rosetta 2 on Apple M2",
+    "Actual macOS13/14 runtime not tested; deployment targets and signatures are validated separately",
+    "Safari and branded Chromium variants were not executed for this release",
+    "Universal app browser acceptance was not separately executed; thin arm64 and x86_64 bundles were tested"
+  ],
+  "executedAt": "2026-10-09T17:38:52.656659+00:00",
   "releases": [
     {
       "version": "0.2.0",
       "minimumMacOS": "13.0",
       "binaries": {
         "IDMMac": {
-          "sha256": "0c6549c2354cfe2649f0910a0901aea764f4fc10ce64b9c66b4e5abaa7e45a9d",
+          "sha256": "8d70c20e468de55118cb363aad08b7de58f27a3ddd315ee1b4705eca20b176a2",
           "architectures": [
             "arm64"
           ]
@@ -49,9 +61,10 @@
       "qaDiagnosticsAbsent": true,
       "archive": {
         "filename": "IDM-Mac-0.2.0-arm64.zip",
-        "sha256": "12202c28049f0de827b46fb76f5b7790e6309d8066b49cc074b30fb3b5a9862b",
-        "bytes": 623354
+        "sha256": "e75a53ed97779eb219d25752dffa0be61a943883243a73bf5da69fec4da579e2",
+        "bytes": 624704
       },
+      "allTestedBundleFilesMatchRelease": true,
       "architecture": "arm64",
       "browsers": [
         {
@@ -351,7 +364,7 @@
       "minimumMacOS": "13.0",
       "binaries": {
         "IDMMac": {
-          "sha256": "4ba891f85d405542f38d1ae57bdd7c04d8b905b620338f9a2812a9c062cf24a1",
+          "sha256": "16a600df1c6ce9b069f053876be2f4b50fbf27232a53ce89212b3db1e3498c19",
           "architectures": [
             "x86_64"
           ]
@@ -368,9 +381,10 @@
       "qaDiagnosticsAbsent": true,
       "archive": {
         "filename": "IDM-Mac-0.2.0-x86_64.zip",
-        "sha256": "6adc69f2dc082b9de3e7a5bd85a01080286d82a9b57617215c9843a6df3c817d",
-        "bytes": 663188
+        "sha256": "b93aaf2245a138a5aadead8ea8077a3e92781daaceaab5e9d31538e1dfd13097",
+        "bytes": 664832
       },
+      "allTestedBundleFilesMatchRelease": true,
       "architecture": "x86_64",
       "browsers": [
         {
@@ -666,17 +680,8 @@
       ]
     }
   ],
-  "method": [
-    "Real isolated Firefox and Chrome for Testing processes execute the production WebExtension logic, packaged Swift native host and AppKit app",
-    "Every native downloaded fixture must have durable jobs.json completed state, exact existing final destination and matching SHA256; Blob staging and browser partial files never count",
-    "Media context testing invokes registered callback inside real browser background context and clicks actual selector; OS context-menu pointer automation is not claimed",
-    "Browser fallback completes under missing native host; Firefox nonrange original failure recovers with exactly one replacement HTTP GET"
-  ],
-  "limitations": [
-    "No physical Intel Mac tested: x86_64 app and host executed through Rosetta 2 on Apple M2",
-    "Actual macOS13/14 runtime not tested; deployment targets and signatures are validated separately",
-    "Safari and branded Chromium variants were not executed for this release",
-    "Universal app browser acceptance was not separately executed; thin arm64 and x86_64 bundles were tested"
-  ],
-  "qaCorrection": "Initial Intel Chromium attempt queried media selector DOM before loading; the bounded wait now tolerates the missing selector until it appears. No production code changed."
+  "qaCorrections": [
+    "Chromium selector readiness wait tolerates the DOM loading before options exist",
+    "Firefox selector tests restore their own browser tab/window to active normal state and wait for a positive viewport before actual WebDriver UI clicks; failed zero-viewport attempts are retained in local QA reports"
+  ]
 }

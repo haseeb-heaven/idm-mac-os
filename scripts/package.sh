@@ -35,6 +35,11 @@ rm -rf "$app/Contents/Resources/BrowserIntegration"
 cp -R build/extensions "$app/Contents/Resources/BrowserIntegration"
 cp integrations/identity.json "$app/Contents/Resources/BrowserIntegration/identity.json"
 cp version.json "$app/Contents/Resources/version.json"
+# Local-only app icon override (e.g. build/local-icon/IDMMac.icns). Vendor
+# artwork is never committed; this stays a no-op on CI and fresh clones.
+if [[ -f build/local-icon/IDMMac.icns ]]; then
+  cp build/local-icon/IDMMac.icns "$app/Contents/Resources/IDMMac.icns"
+fi
 cp "$binary_directory/IDMBrowserHost" "$app/Contents/MacOS/IDMBrowserHost"
 cp "$binary_directory/IDMMac" "$app/Contents/MacOS/IDMMac"
 python3 - "$app" <<'PY'
@@ -42,6 +47,7 @@ import json, plistlib, sys
 from pathlib import Path
 v=json.loads(Path('version.json').read_text())
 p={'CFBundleExecutable':'IDMMac','CFBundleIdentifier':'local.haseebheaven.idmmac','CFBundleName':'IDM Mac','CFBundleDisplayName':'IDM Mac','CFBundlePackageType':'APPL','CFBundleShortVersionString':v['version'],'CFBundleVersion':v['build'],'LSMinimumSystemVersion':v['minimumMacOS'],'CFBundleURLTypes':[{'CFBundleURLName':'IDM Mac Browser Handoff','CFBundleURLSchemes':['idm-mac']}],'NSPrincipalClass':'NSApplication','NSHighResolutionCapable':True}
+if (Path(sys.argv[1])/'Contents/Resources/IDMMac.icns').exists(): p['CFBundleIconFile']='IDMMac'
 with (Path(sys.argv[1])/'Contents/Info.plist').open('wb') as f: plistlib.dump(p,f)
 PY
 # Sign outside Documents: FileProvider can reattach forbidden Finder metadata.
