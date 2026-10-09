@@ -61,7 +61,7 @@ while true {
         guard let config else { throw BrowserProtocolError.invalid }
         try emit(forward(request,config:config))
     } catch {
-        try? emit(BrowserResponse(id:requestID,status:"error",message:"Browser handoff failed. Open IDM Mac and try again."))
+        try? emit(BrowserResponse(id:requestID,status:"error",message:"Browser handoff failed. Open IDM and try again."))
         if requestID.isEmpty { break }
     }
 }

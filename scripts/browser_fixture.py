@@ -15,7 +15,7 @@ from urllib.parse import urlsplit
 PAYLOAD = bytes(range(256)) * 4096
 SHA256 = hashlib.sha256(PAYLOAD).hexdigest()
 PAGE = '''<!doctype html><title>IDM browser QA</title>
-<a href="__SAFARI_HANDOFF__">Send fixture to IDM Mac</a>
+<a href="__SAFARI_HANDOFF__">Send fixture to IDM</a>
 <a href="/file.bin" download="fixture.bin">File</a>
 <a href="/second.bin">Second</a><a href="/file.bin">Duplicate</a>
 <video src="/video.mp4"></video><audio src="/audio.mp3"></audio>

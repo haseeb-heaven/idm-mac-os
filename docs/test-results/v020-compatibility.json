@@ -2,20 +2,20 @@
   "version": "0.2.0",
   "date": "2026-10-09",
   "buildValidation": {
-    "version": "0.2.0",
+    "version": "0.2.1",
     "minimumMacOS": "13.0",
     "artifacts": [
       {
-        "filename": "IDM-Mac-0.2.0-arm64.zip",
-        "bytes": 624704,
-        "sha256": "e75a53ed97779eb219d25752dffa0be61a943883243a73bf5da69fec4da579e2",
+        "filename": "IDM-0.2.1-arm64.zip",
+        "bytes": 1943484,
+        "sha256": "b8a9c96d98844a21394d42d0139282f4115c61d99992799dda6e41a2e7bc68a5",
         "binaries": [
           {
             "name": "IDMMac",
             "architectures": [
               "arm64"
             ],
-            "sha256": "8d70c20e468de55118cb363aad08b7de58f27a3ddd315ee1b4705eca20b176a2",
+            "sha256": "624c545b837784ecbc7cb232f19498774aab1eb8a1a969f66abab62330f25dd2",
             "minimumMacOS": [
               "13.0"
             ],
@@ -26,7 +26,7 @@
             "architectures": [
               "arm64"
             ],
-            "sha256": "7a7cbbf599ccd1206a09ff61179ab9ca837528b9a316101fbfeb4273639002db",
+            "sha256": "d46bc0a5751ae75c6331b623b5f508066d9853b29123f1ba8f404b8c5aa21655",
             "minimumMacOS": [
               "13.0"
             ],
@@ -35,16 +35,16 @@
         ]
       },
       {
-        "filename": "IDM-Mac-0.2.0-x86_64.zip",
-        "bytes": 664832,
-        "sha256": "b93aaf2245a138a5aadead8ea8077a3e92781daaceaab5e9d31538e1dfd13097",
+        "filename": "IDM-0.2.1-x86_64.zip",
+        "bytes": 1983562,
+        "sha256": "67b252e711bc6fd161ba640ce12106e16580e4f70be9d1c036c0007401cf44c2",
         "binaries": [
           {
             "name": "IDMMac",
             "architectures": [
               "x86_64"
             ],
-            "sha256": "16a600df1c6ce9b069f053876be2f4b50fbf27232a53ce89212b3db1e3498c19",
+            "sha256": "52e62b26827f0954a4e7083b451f91071fa356518d070a8da3d326a8a748b10e",
             "minimumMacOS": [
               "13.0"
             ],
@@ -55,7 +55,7 @@
             "architectures": [
               "x86_64"
             ],
-            "sha256": "4b3bf71db8e42e3b94cfda7cca215de6d331d97bd98db1b3a3154a181763968f",
+            "sha256": "3a3c97512954e32d2e08a401eedcce5eac72698d58042d6b1242bf2efa6f4a18",
             "minimumMacOS": [
               "13.0"
             ],
@@ -64,9 +64,9 @@
         ]
       },
       {
-        "filename": "IDM-Mac-0.2.0-universal.zip",
-        "bytes": 1266285,
-        "sha256": "54f7b7db45826cdd7509d0f03609cd4df59d9e0324f8824a1b68d3d390baa493",
+        "filename": "IDM-0.2.1-universal.zip",
+        "bytes": 2585058,
+        "sha256": "8f8116f530452c661630c08866f5efe52d46025b064d4f9f34bca83444c53fd1",
         "binaries": [
           {
             "name": "IDMMac",
@@ -74,7 +74,7 @@
               "arm64",
               "x86_64"
             ],
-            "sha256": "8fee2e9f9138b3ba0ed8b9fc461f762fee3f1e1f890530b58daaa0c4b6a16b51",
+            "sha256": "0fe4c287371b474d0f21597b95013aea74c51a803c4d596f79f7fbcb38e01192",
             "minimumMacOS": [
               "13.0",
               "13.0"
@@ -87,7 +87,7 @@
               "arm64",
               "x86_64"
             ],
-            "sha256": "dee4a21f8382c2a6f4215fbb93ddd979f24a415ce046e12782538e1f0b4f39bc",
+            "sha256": "11f2cf77727d57e13e45b0183ba36ba87b12bcba24d0821f14d7ed2f4f4bb46d",
             "minimumMacOS": [
               "13.0",
               "13.0"

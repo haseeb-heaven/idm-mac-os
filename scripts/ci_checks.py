@@ -13,7 +13,7 @@ import tempfile
 import time
 
 ROOT = Path(__file__).resolve().parent.parent
-APP = ROOT / 'build/IDM Mac.app'
+APP = ROOT / 'build/IDM.app'
 
 
 def execute(command, timeout):
@@ -70,7 +70,7 @@ def main():
             proof['binaries'].append({'name': binary.name, 'architectures': arch,
                                       'sha256': hashlib.sha256(binary.read_bytes()).hexdigest()})
         (ROOT / 'build/ci-proof.json').write_text(json.dumps(proof, indent=2) + '\n')
-        execute(['ditto', '-c', '-k', '--sequesterRsrc', '--keepParent', str(APP), 'build/IDM-Mac-tested.zip'], 60)
+        execute(['ditto', '-c', '-k', '--sequesterRsrc', '--keepParent', str(APP), 'build/IDM-tested.zip'], 60)
     print(f'PASS {stage}: {time.monotonic() - started:.1f} seconds', flush=True)
 
 

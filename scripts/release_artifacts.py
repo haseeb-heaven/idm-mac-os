@@ -16,11 +16,11 @@ def digest(path):
 subprocess.run(['scripts/package.sh','--arch','universal'],cwd=ROOT,check=True)
 artifacts=[]
 for architecture in ('arm64','x86_64','universal'):
-    source_app=OUT/architecture/'IDM Mac.app'
+    source_app=OUT/architecture/'IDM.app'
     # FileProvider may reattach FinderInfo in Documents after packaging. Perform
     # archive verification on a metadata-free staging copy, outside Documents.
     staging=tempfile.TemporaryDirectory(prefix='idm-release-stage-',dir='/private/tmp')
-    app=Path(staging.name)/'IDM Mac.app'
+    app=Path(staging.name)/'IDM.app'
     command('ditto','--norsrc','--noextattr',str(source_app),str(app))
     command('xattr','-cr',str(app))
     expected={'arm64','x86_64'} if architecture=='universal' else {architecture}
@@ -38,7 +38,7 @@ for architecture in ('arm64','x86_64','universal'):
         minimums=re.findall(r'\bminos\s+([\d.]+)',load_commands)
         assert minimums and all(x.startswith('13.') for x in minimums),(product,minimums)
         binaries.append({'name':product,'architectures':sorted(architectures),'sha256':digest(binary),'minimumMacOS':minimums,'signature':'ad hoc; strict verification passed'})
-    archive=OUT/f'IDM-Mac-{VERSION["version"]}-{architecture}.zip'
+    archive=OUT/f'IDM-{VERSION["version"]}-{architecture}.zip'
     # No resource forks or quarantine metadata are distributed in release archives.
     command('ditto','-c','-k','--norsrc','--noextattr','--keepParent',str(app),str(archive))
     with tempfile.TemporaryDirectory(prefix='idm-release-verify-',dir='/private/tmp') as extraction:

@@ -4,13 +4,13 @@ The download manager, app bridge and native messaging host are native Swift. Bro
 
 ## Install
 
-1. Run `scripts/install.sh` and open `~/Applications/IDM Mac.app`. This packages and registers the native host; putting the app outside Documents avoids browser privacy restrictions on that folder.
+1. Run `scripts/install.sh` and open `~/Applications/IDM.app`. This packages and registers the native host; putting the app outside Documents avoids browser privacy restrictions on that folder.
 2. Choose **File → Browser Integrations → Open Setup**. If you move the app, choose **Register Browsers** again.
 3. Chromium browsers: open the browser's extensions page, enable developer mode, choose **Load unpacked**, and select the setup page's `chromium` directory.
 4. Firefox: use `about:debugging#/runtime/this-firefox` → **Load Temporary Add-on** → the included `firefox/manifest.json`. Temporary add-ons must be reloaded after restarting Firefox. Persistent release installation requires Mozilla signing.
 5. In Safari or another browser, copy the provided bookmarklet into a bookmark URL. It hands HTTP/HTTPS links to the app for destination approval.
 
-The setup resources are packaged in `IDM Mac.app/Contents/Resources/BrowserIntegration` and generated in `build/extensions`. Native hosts are registered per user. No browser profile is modified by the extension build.
+The setup resources are packaged in `IDM.app/Contents/Resources/BrowserIntegration` and generated in `build/extensions`. Native hosts are registered per user. No browser profile is modified by the extension build.
 
 ## Functions
 

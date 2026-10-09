@@ -1,6 +1,10 @@
 # How the macOS implementation was built
 
-IDM Mac is an independent personal macOS project. It is not an official Tonec product or an endorsed IDM release. The owner's licensed Windows software supplies the reference for analysis and behavior comparison. Native macOS code is authored in Swift and AppKit.
+IDM is an independent personal macOS project. It is not an official Tonec product or an endorsed IDM release. The owner's licensed Windows software supplies the reference for analysis and behavior comparison. Native macOS code is authored in Swift and AppKit.
+
+## Credits
+
+Internet Download Manager is made by the original IDM team at Tonec FZE — https://www.internetdownloadmanager.com/. This is an unofficial port for macOS, with no affiliation or endorsement. If you use Windows, please buy the official IDM license to support the original team.
 
 ## Provenance
 

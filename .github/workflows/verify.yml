@@ -45,7 +45,7 @@ jobs:
         with:
           name: idm-mac-${{ matrix.runner }}-${{ github.sha }}
           path: |
-            build/IDM-Mac-tested.zip
+            build/IDM-tested.zip
             build/ci-proof.json
             build/ui-smoke.json
             build/ui-e2e.json
