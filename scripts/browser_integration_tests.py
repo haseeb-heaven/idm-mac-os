@@ -298,6 +298,13 @@ def run_firefox(args):
                 time.sleep(.1)
             driver.request('POST',driver.path('/window'),{'handle':new_handles.pop()})
             driver.request('POST',driver.path('/window/rect'),{'width':1024,'height':800})
+            report['mediaInitialViewport']=driver.evaluate('({url:location.href,width:innerWidth,height:innerHeight,visibility:document.visibilityState})')
+            activated=driver.evaluate('browser.tabs.getCurrent().then(tab=>tab?browser.tabs.update(tab.id,{active:true}).then(()=>browser.windows.update(tab.windowId,{focused:true,state:"normal"})):Promise.reject(new Error("Selector is not a browser tab")))')
+            if isinstance(activated,dict) and activated.get('error'):raise AssertionError(activated)
+            viewport_deadline=time.monotonic()+10
+            while not driver.evaluate('innerWidth>0 && innerHeight>0'):
+                if time.monotonic()>viewport_deadline:raise TimeoutError('Firefox selector browsing context has zero viewport')
+                time.sleep(.1)
             while driver.evaluate('document.querySelector("#choices")?.options.length')!=3:
                 if time.monotonic()>deadline:raise TimeoutError('Media selector did not retain HTTP and Blob choices')
                 time.sleep(.1)
