@@ -12,6 +12,7 @@
   function links(items) { const seen = new Set(); return items.map(validateLink).filter(l => !seen.has(l.url) && seen.add(l.url)).slice(0, MAX_LINKS); }
   function httpLinks(items) { return links(items.filter(link => !String(link.url).startsWith('blob:'))); }
   function permissionPattern(url) { const u = new URL(url); if (!['http:','https:'].includes(u.protocol)) throw new Error('Site access requires HTTP or HTTPS'); return u.protocol + '//' + u.hostname + '/*'; }
+  function linkAction(url) { return String(url).startsWith('blob:') ? 'blob' : 'download'; }
   function cookieStore(tab, stores) {
     if (!tab || !Number.isInteger(tab.id)) throw new Error('Cookie sharing requires an identified browser tab; automatic capture resumed');
     if (tab.cookieStoreId) return tab.cookieStoreId;
@@ -26,6 +27,6 @@
     try { const response = nativeResponse(await request({url:item.url,filename:item.filename && item.filename.split(/[\\/]/).pop()})); if (response.status === 'queued') { await api.cancel(item.id); return 'queued'; } await api.resume(item.id); return response.status; }
     catch (error) { await api.resume(item.id); throw error; }
   }
-  const core = {MAX_LINKS,CHUNK_BYTES,validateLink,links,httpLinks,permissionPattern,cookieStore,nativeResponse,capture};
+  const core = {MAX_LINKS,CHUNK_BYTES,validateLink,links,httpLinks,permissionPattern,linkAction,cookieStore,nativeResponse,capture};
   root.IDMCore = core; if (typeof module !== 'undefined') module.exports = core;
 })(globalThis);

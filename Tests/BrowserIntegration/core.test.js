@@ -27,3 +27,5 @@ test('universal bookmarklet hands off ordinary HTTP without randomUUID',()=> {
 });
 
 test('cookies bind to identified tab container and incognito store',()=> { const stores=[{id:'default',tabIds:[1]},{id:'incognito',tabIds:[2]}]; assert.equal(core.cookieStore({id:2,incognito:true},stores),'incognito'); assert.equal(core.cookieStore({id:3,cookieStoreId:'firefox-container-1'},[]),'firefox-container-1'); assert.throws(()=>core.cookieStore(null,stores),/identified browser tab/); assert.throws(()=>core.cookieStore({id:99},stores),/Unable to identify/); });
+
+test('ordinary Blob anchor context menu routes to streaming import',()=> { assert.equal(core.linkAction('blob:https://a.test/id'),'blob'); assert.equal(core.linkAction('https://a.test/f'),'download'); });
