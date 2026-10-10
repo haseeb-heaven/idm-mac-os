@@ -29,7 +29,7 @@ public struct GrabbedItem: Sendable, Hashable, Identifiable {
             return "Compressed"
         case "pdf", "epub", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "rtf", "csv", "odt", "ods", "odp":
             return "Document"
-        case "exe", "msi", "bin", "apk", "ipa", "run":
+        case "exe", "msi", "bin", "apk", "ipa", "run", "sh", "bash", "zsh", "command", "py", "app":
             return "Program"
         default:
             if url.pathComponents.contains(where: { $0.lowercased() == "download" }) {
@@ -52,8 +52,8 @@ public enum SiteGrabber {
         "png", "jpg", "jpeg", "webp", "gif", "svg", "bmp", "ico", "tiff", "tif", "psd", "avif",
         // Documents
         "pdf", "epub", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "odt", "ods", "odp", "txt", "rtf", "csv",
-        // Programs
-        "exe", "bin", "run"
+        // Programs & Scripts
+        "exe", "bin", "run", "sh", "bash", "zsh", "command", "py", "app"
     ]
 
     public static func links(on url: URL) async throws -> [URL] {
@@ -137,10 +137,30 @@ public enum SiteGrabber {
                     rawCandidates.append((val, true, false))
                 }
             }
+            // Also scan for direct URLs embedded in text, scripts, or markdown (e.g. bash scripts downloading archives)
+            let directUrlPattern = #"https?://[^\s"'`<>|\)]+"#
+            if let urlRegex = try? NSRegularExpression(pattern: directUrlPattern, options: .caseInsensitive) {
+                let ns = clean as NSString
+                let matches = urlRegex.matches(in: clean, options: [], range: NSRange(location: 0, length: ns.length))
+                for match in matches {
+                    var val = ns.substring(with: match.range)
+                    while let last = val.last, [")", "]", "}", "'", "\"", ">", ",", ";"].contains(last) {
+                        val.removeLast()
+                    }
+                    rawCandidates.append((val, true, false))
+                }
+            }
         }
 
         var seen = Set<URL>()
         var results = [GrabbedItem]()
+
+        // If the targeted page/URL itself is a downloadable file or script (e.g. .sh, .zip, .dmg, etc.),
+        // include it as the first grabbed item:
+        let baseExt = baseURL.pathExtension.lowercased()
+        if extensions.contains(baseExt) && seen.insert(baseURL).inserted {
+            results.append(GrabbedItem(url: baseURL))
+        }
 
         for item in rawCandidates {
             guard let candidate = URL(string: item.raw, relativeTo: baseURL)?.absoluteURL,

@@ -603,22 +603,33 @@ import CryptoKit
     }
     @objc private func addURL() {
         let a = NSAlert(); a.messageText = "Add Download"; a.addButton(withTitle: "Download"); a.addButton(withTitle: "Cancel")
-        let url = textField("https://example.com/file.zip"); let user = textField("Username (optional)"); let password = textField("Password (optional)", secure: true)
+        let url = textField("https://example.com/file.zip or curl command")
+        if let paste = NSPasteboard.general.string(forType: .string)?.trimmingCharacters(in: .whitespacesAndNewlines),
+           let req = URLExtractor.extract(from: paste) {
+            url.stringValue = req.url.absoluteString
+        }
+        let user = textField("Username (optional)"); let password = textField("Password (optional)", secure: true)
         let fields = NSStackView(views: [url,user,password]); fields.orientation = .vertical; fields.alignment = .leading;fields.spacing = 10;fields.frame.size = fields.fittingSize;a.accessoryView = fields
         guard a.runModal() == .alertFirstButtonReturn else { return }
         do {
-            guard let address = URL(string: url.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)) else { throw DownloadError.invalidURL }
-            let panel = NSSavePanel(); panel.nameFieldStringValue = DownloadFilename.from(address)
+            let input = url.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard let req = URLExtractor.extract(from: input) else { throw DownloadError.invalidURL }
+            let address = req.url
+            let filename = req.suggestedFilename ?? DownloadFilename.from(address)
+            let panel = NSSavePanel(); panel.nameFieldStringValue = filename
             panel.directoryURL = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first
             guard panel.runModal() == .OK, let destination = panel.url else { return }
             let job = try DownloadJob(url: address, destination: destination)
             guard !jobs.contains(where: { $0.destination == destination && $0.state != .completed }) else { throw DownloadError.destinationExists }
-            if !user.stringValue.isEmpty { try CredentialStore.save(username: user.stringValue, password: password.stringValue, jobID: job.id) }
+            let finalUser = !user.stringValue.isEmpty ? user.stringValue : (req.username ?? "")
+            let finalPass = !password.stringValue.isEmpty ? password.stringValue : (req.password ?? "")
+            if !finalUser.isEmpty { try CredentialStore.save(username: finalUser, password: finalPass, jobID: job.id) }
+            if !req.headers.isEmpty { try CredentialStore.saveHeaders(req.headers, jobID: job.id) }
             jobs.append(job); persist(); refresh(); pumpQueue()
         } catch { alert(error) }
     }
     @objc private func batchURLs() {
-        let a = NSAlert(); a.messageText = "Batch URLs"; a.informativeText = "Enter one HTTP or HTTPS URL per line."; a.addButton(withTitle:"Add"); a.addButton(withTitle:"Cancel")
+        let a = NSAlert(); a.messageText = "Batch URLs"; a.informativeText = "Enter one HTTP or HTTPS URL or curl command per line."; a.addButton(withTitle:"Add"); a.addButton(withTitle:"Cancel")
         let text = NSTextView(frame:NSRect(x:0,y:0,width:450,height:180));text.isRichText = false; let scroll = NSScrollView(frame:text.frame); scroll.documentView = text; scroll.hasVerticalScroller = true; a.accessoryView = scroll
         guard a.runModal() == .alertFirstButtonReturn else { return }
         let panel = NSOpenPanel(); panel.canChooseFiles = false; panel.canChooseDirectories = true; panel.canCreateDirectories = true
@@ -629,13 +640,17 @@ import CryptoKit
         do {
             var additions = [DownloadJob]()
             for line in lines where !line.trimmingCharacters(in:.whitespacesAndNewlines).isEmpty {
-                guard let url = URL(string:line.trimmingCharacters(in:.whitespacesAndNewlines)) else { throw DownloadError.invalidURL }
-                let name = DownloadFilename.from(url)
+                guard let req = URLExtractor.extract(from: line) else { throw DownloadError.invalidURL }
+                let url = req.url
+                let name = req.suggestedFilename ?? DownloadFilename.from(url)
                 var destination = directory.appendingPathComponent(name); var suffix = 1
                 while FileManager.default.fileExists(atPath:destination.path) || (jobs + additions).contains(where:{$0.destination == destination}) {
                     destination = directory.appendingPathComponent("\(suffix)-\(name)"); suffix += 1
                 }
-                additions.append(try DownloadJob(url:url,destination:destination))
+                let job = try DownloadJob(url:url,destination:destination)
+                if !req.headers.isEmpty { try CredentialStore.saveHeaders(req.headers, jobID: job.id) }
+                if let u = req.username, let p = req.password { try CredentialStore.save(username: u, password: p, jobID: job.id) }
+                additions.append(job)
             }
             jobs += additions; persist(); refresh(); pumpQueue()
         } catch { alert(error) }

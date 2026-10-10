@@ -17,6 +17,7 @@ import UniformTypeIdentifiers
 
     private let quickSites: [QuickSite] = [
         QuickSite(title: "Choose Website… (or enter URL)", urlString: ""),
+        QuickSite(title: "Project IGI Installer (openigi.com/install.sh)", urlString: "https://openigi.com/install.sh"),
         QuickSite(title: "Node.js Dist (Official releases & binaries)", urlString: "https://nodejs.org/dist/"),
         QuickSite(title: "Python Downloads (Official Python installers & packages)", urlString: "https://www.python.org/downloads/"),
         QuickSite(title: "Internet Archive (Software library)", urlString: "https://archive.org/details/software"),
@@ -66,8 +67,8 @@ import UniformTypeIdentifiers
         super.showWindow(sender)
         if urlField.stringValue.isEmpty,
            let paste = NSPasteboard.general.string(forType: .string)?.trimmingCharacters(in: .whitespacesAndNewlines),
-           paste.lowercased().hasPrefix("http://") || paste.lowercased().hasPrefix("https://") {
-            urlField.stringValue = paste
+           let req = URLExtractor.extract(from: paste) {
+            urlField.stringValue = req.url.absoluteString
         }
     }
     
@@ -134,7 +135,8 @@ import UniformTypeIdentifiers
             "Video files (MP4, MKV, MOV, WebM, AVI)",
             "Audio files (MP3, FLAC, WAV, M4A, AAC)",
             "Compressed Archives (ZIP, RAR, 7Z, DMG, PKG)",
-            "Documents (PDF, DOCX, TXT, EPUB, CSV)"
+            "Documents (PDF, DOCX, TXT, EPUB, CSV)",
+            "Programs & Scripts (SH, BIN, EXE, APP, PY)"
         ])
         presetPopup.target = self; presetPopup.action = #selector(presetChanged)
         presetPopup.controlSize = .small
@@ -159,13 +161,14 @@ import UniformTypeIdentifiers
         inputCard.edgeInsets = NSEdgeInsets(top: 14, left: 16, bottom: 12, right: 16)
 
         // Middle Section: Filter Bar & Table
-        categoryFilter.segmentCount = 6
+        categoryFilter.segmentCount = 7
         categoryFilter.setLabel("All", forSegment: 0)
         categoryFilter.setLabel("Pictures", forSegment: 1)
         categoryFilter.setLabel("Video", forSegment: 2)
         categoryFilter.setLabel("Audio", forSegment: 3)
         categoryFilter.setLabel("Compressed", forSegment: 4)
         categoryFilter.setLabel("Documents", forSegment: 5)
+        categoryFilter.setLabel("Programs", forSegment: 6)
         categoryFilter.selectedSegment = 0
         categoryFilter.target = self; categoryFilter.action = #selector(categoryChanged)
         categoryFilter.controlSize = .small
@@ -268,12 +271,11 @@ import UniformTypeIdentifiers
     }
 
     @objc private func openCurrentSiteInBrowser() {
-        var text = urlField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        let text = urlField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
-        if !text.lowercased().hasPrefix("http://") && !text.lowercased().hasPrefix("https://") {
-            text = "https://" + text
-        }
-        if let url = URL(string: text) {
+        if let req = URLExtractor.extract(from: text) {
+            NSWorkspace.shared.open(req.url)
+        } else if let url = URL(string: text.hasPrefix("http") ? text : "https://" + text) {
             NSWorkspace.shared.open(url)
         }
     }
@@ -285,24 +287,26 @@ import UniformTypeIdentifiers
 
     @objc private func pasteURL() {
         if let pasteboardString = NSPasteboard.general.string(forType: .string)?.trimmingCharacters(in: .whitespacesAndNewlines), !pasteboardString.isEmpty {
-            urlField.stringValue = pasteboardString
+            if let req = URLExtractor.extract(from: pasteboardString) {
+                urlField.stringValue = req.url.absoluteString
+            } else {
+                urlField.stringValue = pasteboardString
+            }
         }
     }
 
     @objc private func startGrab() {
-        var text = urlField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        let text = urlField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else {
             statusLabel.stringValue = "Please enter a web address or choose a website from the dropdown."
             return
         }
-        if !text.lowercased().hasPrefix("http://") && !text.lowercased().hasPrefix("https://") {
-            text = "https://" + text
-            urlField.stringValue = text
-        }
-        guard let url = URL(string: text), url.host != nil else {
+        guard let req = URLExtractor.extract(from: text), req.url.host != nil else {
             statusLabel.stringValue = "Invalid website address."
             return
         }
+        let url = req.url
+        urlField.stringValue = url.absoluteString
 
         grabButton.isEnabled = false
         progressIndicator.startAnimation(nil)
@@ -349,13 +353,14 @@ import UniformTypeIdentifiers
         case 3: categoryFilter.selectedSegment = 3
         case 4: categoryFilter.selectedSegment = 4
         case 5: categoryFilter.selectedSegment = 5
+        case 6: categoryFilter.selectedSegment = 6
         default: categoryFilter.selectedSegment = 0
         }
         categoryChanged()
     }
 
     @objc private func categoryChanged() {
-        let labels = ["All", "Picture", "Video", "Audio", "Compressed", "Document"]
+        let labels = ["All", "Picture", "Video", "Audio", "Compressed", "Document", "Program"]
         let idx = categoryFilter.selectedSegment
         activeCategory = idx >= 0 && idx < labels.count ? labels[idx] : "All"
         applyFilters()

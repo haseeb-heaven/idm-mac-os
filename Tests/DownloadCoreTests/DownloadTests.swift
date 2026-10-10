@@ -319,6 +319,48 @@ final class DownloadTests: @unchecked Sendable {
         try XCTAssertThrowsError(try DownloadJob(url:URL(string:"file:///tmp/x")!,destination:URL(fileURLWithPath:"/tmp/out")))
         try XCTAssertThrowsError(try DownloadJob(url:URL(string:"https://user:secret@example.com/x")!,destination:URL(fileURLWithPath:"/tmp/out")))
     }
+    func testURLExtractorCurlCommands() throws {
+        // Standard curl piped to bash
+        let pipeCmd = "curl -fsSL https://openigi.com/install.sh | bash"
+        let res1 = URLExtractor.extract(from: pipeCmd)
+        try require(res1 != nil, "Expected parsed result for pipeCmd")
+        try XCTAssertEqual(res1?.url.absoluteString, "https://openigi.com/install.sh")
+
+        // Subshell curl command
+        let subshell = #"/bin/bash -c "$(curl -fsSL https://openigi.com/install.sh)""#
+        let res2 = URLExtractor.extract(from: subshell)
+        try require(res2 != nil, "Expected parsed result for subshell")
+        try XCTAssertEqual(res2?.url.absoluteString, "https://openigi.com/install.sh")
+
+        // wget with output filename flag
+        let wgetCmd = "wget -O my-script.sh https://example.com/downloads/script.sh"
+        let res3 = URLExtractor.extract(from: wgetCmd)
+        try require(res3 != nil, "Expected parsed result for wgetCmd")
+        try XCTAssertEqual(res3?.url.absoluteString, "https://example.com/downloads/script.sh")
+        try XCTAssertEqual(res3?.suggestedFilename, "my-script.sh")
+
+        // curl with auth and custom header
+        let curlFull = #"curl -u testuser:secret123 -H "Authorization: Bearer xyz" -o package.tar.gz https://example.com/api/package.tar.gz"#
+        let res4 = URLExtractor.extract(from: curlFull)
+        try require(res4 != nil, "Expected parsed result for curlFull")
+        try XCTAssertEqual(res4?.url.absoluteString, "https://example.com/api/package.tar.gz")
+        try XCTAssertEqual(res4?.suggestedFilename, "package.tar.gz")
+        try XCTAssertEqual(res4?.username, "testuser")
+        try XCTAssertEqual(res4?.password, "secret123")
+        try XCTAssertEqual(res4?.headers["Authorization"], "Bearer xyz")
+
+        // Bare domain path command
+        let bareCmd = "curl openigi.com/install.sh | sh"
+        let res5 = URLExtractor.extract(from: bareCmd)
+        try require(res5 != nil, "Expected parsed result for bareCmd")
+        try XCTAssertEqual(res5?.url.absoluteString, "https://openigi.com/install.sh")
+
+        // Categorization check for script
+        let item = GrabbedItem(url: URL(string: "https://openigi.com/install.sh")!)
+        try XCTAssertEqual(item.category, "Program")
+        try XCTAssertEqual(item.fileExtension, ".sh")
+        try XCTAssertEqual(item.filename, "install.sh")
+    }
 }
 
 private func log(_ text:String) { FileHandle.standardOutput.write(Data((text + "\n").utf8)) }
@@ -440,6 +482,7 @@ private func runOpenIGICheck(output:URL) async throws -> String {
         try await suite.testCrossOriginRedirectDropsCredentials();passed += 1;log("PASS testCrossOriginRedirectDropsCredentials")
         try suite.testBrowserLocalURLs();passed += 1;log("PASS testBrowserLocalURLs")
         log("RUN testURLValidation"); try suite.testURLValidation(); passed += 1; log("PASS testURLValidation")
+        log("RUN testURLExtractorCurlCommands"); try suite.testURLExtractorCurlCommands(); passed += 1; log("PASS testURLExtractorCurlCommands")
         passed += try await runBrowserChecks();log("PASS browser protocol, blobs, legacy jobs and Keychain")
         try await suite.testGrabberExtensionlessDownloads();passed += 1;log("PASS extensionless Grabber download endpoints")
         log("Passed \(passed) checks")
